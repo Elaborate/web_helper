@@ -1,0 +1,21 @@
+{
+  "name": "rrl_updater",
+  "version": "0.0.1",
+  "description": "Application to upload chapters to RRL for you",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Roland Hansson",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
+    "electron": "^4.0.8",
+    "keytar": "^4.4.1",
+    "react": "^16.8.4",
+    "request": "^2.88.0"
+  },
+  "devDependencies": {
+    "electron-rebuild": "^1.8.4"
+  }
+}

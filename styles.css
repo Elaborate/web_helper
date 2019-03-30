@@ -1,0 +1,8 @@
+fieldset{
+    border-width: 3px;
+    border-color: blue; 
+    border-style: solid;
+    border-spacing: 5px;
+    padding: 5px;
+    margin: 5px;
+}
