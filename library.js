@@ -165,7 +165,7 @@ var website = /** @class */ (function () {
         this.loadUpdateSettings();
         var formName = "account_" + this.siteName;
         ipcRenderer.on("${formName}", function () { console.log("ipcRenderer got form request: " + formName); });
-        return "\n      <form id=\"" + formName + "\" onSubmit=\"JavaScript:sendForm(event, '" + formName + "')\">\n      <fieldset>\n        <legend>Account Information, " + this.siteName + "</legend>\n        <input type=hidden name=service value=\"test_" + this.siteName + "\"/>\n        <input type=hidden name=order value=\"changeAccountDetails\"/>\n        <input name=username placeholder=email value=\"" + this.username + "\"/>\n        <input type=password placeholder=password name=password value=\"" + this.password + "\"/>\n        <input type=submit value=\"Change Account Data\"/>\n      </fieldset>\n      </form>\n      ";
+        return "\n      <form id=\"" + formName + "\" onSubmit=\"JavaScript:sendForm(event, '" + formName + "')\">\n      <fieldset>\n        <legend>Account Information, " + this.siteName + "</legend>\n        <input type=hidden name=service value=\"" + this.siteName + "\"/>\n        <input type=hidden name=order value=\"changeAccountDetails\"/>\n        <input name=username placeholder=email value=\"" + this.username + "\"/>\n        <input type=password placeholder=password name=password value=\"" + this.password + "\"/>\n        <input type=submit value=\"Change Account Data\"/>\n      </fieldset>\n      </form>\n      ";
     };
     //------------------------------------------------------------------------------
     //------------------------------------------------------------------------------
@@ -177,22 +177,35 @@ var website = /** @class */ (function () {
         try{ipcMain.send(name, form);}
         catch{console.log("No ipcMain");}
         */
-        console.log("Argument: " + form);
-        //Extract inputs from form. 
+        console.log("MESSAGE RECEIVED!");
+        /*
+        //Extract inputs from form.
         var $ = cheerio.load(form);
         var input = $('input');
+        var args={};
+        input.each(function(i,element){
+          console.log("field "+element.attribs['name']+": "+element.attribs['value']);
+          args[element.attribs['name']]=element.attribs['value'];
+          });
+  */
         var args = {};
-        input.each(function (i, element) {
-            console.log("field " + element.attribs['name'] + ": " + element.attribs['value']);
-            args[element.attribs['name']] = element.attribs['value'];
+        var split = form.split("&");
+        split.forEach(function (x) {
+            var y = x.split('=');
+            console.log(y[0] + " " + y[1]);
+            var new_arg = decodeURIComponent(y[1]);
+            if (new_arg.includes(','))
+                new_arg = split(',');
+            args[y[0]] = new_arg;
         });
         //Call the function specified in form input "order"  
         //investigate(args);
         try {
             this[args["order"]](args);
         }
-        catch (_a) {
-            console.log(this.siteName + (" method called '" + args["order"] + "' did not work"));
+        catch (e) {
+            console.log(this.siteName + (" method called '" + args["order"] + "' did not work. " + e.message + "\n      \n      \n      "));
+            investigate(args);
         }
     };
     //------------------------------------------------------------------------------
@@ -502,6 +515,71 @@ var RRL = /** @class */ (function (_super) {
     };
     //-----------------------------------------------------------------
     //-----------------------------------------------------------------
+    RRL.loadFictions = function () {
+        //<a href="/fiction/submission/edit?id=12134" class="btn btn-default col-xs-6">
+        console.log("calling loadFictions()");
+        this.loadUpdateSettings();
+        //const {ipcMain} = require('electron');
+        ipcMain.once('hasToken', function (event, body) {
+            RRL.getTokenFromHTML(body);
+            console.log("Has gotten Token.");
+            RRL.login_win();
+        });
+        ipcMain.once('hasLoggedIn', function (event, body) {
+            console.log("Has logged in.");
+            RRL._loadFictions();
+        });
+        ipcMain.once('hasGottenFictions', function (event, body) {
+            console.log("Has gotten fictions: " + body);
+            RRL.message('updateFictions', body);
+        });
+        this.getToken_win();
+    };
+    RRL._loadFictions = function () {
+        var _this = this;
+        if (!this.loggedIn) {
+            console.log("not logged in");
+            return;
+        }
+        this.init();
+        this.getToken_win();
+        console.log('Loading Fictions via a browser window.');
+        this.window.loadURL(this.fictionsPage);
+        this.window.webContents.openDevTools();
+        this.window.webContents.once('dom-ready', function () {
+            console.log("Finding Fictions");
+            RRL.window.webContents.executeJavaScript("\n        \n        const cheerio = require('cheerio');\n        var $ = cheerio.load(document.body.innerHTML);\n        var links = $('a');\n        var result = [];\n        var query = \"/fiction/submission/edit?id=\";\n        links.each(function(i,element){\n          //console.log(\"field \"+element.attribs['name']+\": \"+element.attribs['value']);\n          if (element.attribs['href'] && element.attribs['href'].includes(query)){ \n            console.log(\"fiction: \"+element.attribs['href']);\n            result.push(element.attribs['href'].split('=')[1]);\n          }\n          });  \n        var result_string=\"order=updateFictions&fictions=\"+result.join(','); \n        //alert(\"finding fictions: \"+result_string)\n        require('electron').ipcRenderer.send('hasGottenFictions', result_string);\n        ");
+            return _this.token;
+        });
+    };
+    RRL.updateFictions = function (args) {
+        console.log('updating fictions');
+        //investigate(args); 
+        var fics = new Array(args['fictions']);
+        //investigate(fics);
+        fics.forEach(function (id) {
+            if (!(RRL.fictions[id])) {
+                console.log('adding fiction ' + id);
+                RRL.fictions[id] = {};
+                RRL.fictions[id]["ID"] = id;
+            }
+            else
+                console.log('ignoring fiction ' + id);
+        });
+        console.log('converting into JSON: ');
+        investigate(RRL.fictions);
+        var settingsFile = RRL.siteName + ".json";
+        var fs = require('fs');
+        var jsonString = JSON.stringify(RRL.fictions);
+        console.log(jsonString);
+        fs.writeFile(settingsFile, jsonString, function (err) {
+            if (err)
+                return console.log(err);
+            console.log('writing to ' + settingsFile);
+        });
+    };
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
     RRL.loadUpdateSettings = function () {
         _super.loadUpdateSettings.call(this);
         this.chaptersPerUpdate = 7;
@@ -518,15 +596,76 @@ var RRL = /** @class */ (function (_super) {
         this.bookmarking = false;
         var ipcMain = require('electron').ipcMain;
         this.ipcMain = ipcMain;
+        try {
+            this.fictions = require('./' + RRL.siteName + '.json');
+        }
+        catch (_a) {
+            console.log("can't find RRL file");
+            this.fictions = {};
+        }
+        try {
+            console.log(investigate(this.fictions));
+        }
+        catch (_b) {
+            console.log("can't investigate 'fictions'");
+        }
+    };
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    //changeUpdateSettings, changes settings for site updates
+    RRL.changeUpdateSettings = function (fiction) {
+        this.loadUpdateSettings();
+        console.log("called changeUpdateSettings");
+        var settingsFile = this.siteName + ".json";
+        var fs = require('fs');
+        console.log("fiction: " + fiction.ID);
+        investigate(this.fictions);
+        this.fictions[fiction.ID] = fiction;
+        var jsonString = JSON.stringify(this.fictions, null, 2);
+        fs.writeFile(settingsFile, jsonString, function (err) {
+            if (err)
+                return console.log(err);
+            console.log("JSON: " + jsonString);
+            console.log('writing to ' + settingsFile);
+        });
+        return "success";
     };
     //-----------------------------------------------------------------
     //-----------------------------------------------------------------
     //displayUpdateSettings, displays HTML form to change settings for site updates
     RRL.displayUpdateSettings = function () {
+        console.log("displaying update settings");
         this.loadUpdateSettings();
-        var formName = "settings_" + this.siteName;
-        ipcRenderer.on("${formName}", function () { console.log("ipcRenderer got form request: " + formName); });
-        return "\n        <form id=\"" + formName + "\" onSubmit=\"JavaScript:sendForm(event, '" + formName + "')\">\n          <fieldset>\n          <legend> Site settings, " + this.siteName + "</legend>\n          Fiction name: X<br/>\n          Updates on <input name=\"time\" type=\"time\"/><br/>\n          Daily update<br/>\n          Weekly update on <select name=\"weekday\">\n          <option value=\"monday\">monday</option>\n          <option value=\"tuesday\">tuesday</option>\n          <option value=\"wednesday\">wednesday</option>\n          <option value=\"thursday\">thursday</option>\n          <option value=\"friday\">friday</option>\n          <option value=\"saturday\">saturday</option>\n          <option value=\"sunday\">sunday</option>\n          Number of chapters per update: \n          </select>\n          </fieldset>\n        </form>\n        ";
+        console.log("fictions: " + investigate(this.fictions));
+        console.log("# of fictions: " + Object.keys(this.fictions).length);
+        var title_choices = "";
+        if (Object.keys(this.fictions).length > 1) {
+            title_choices = "<select name=fic_title>";
+            Object.keys(this.fictions).forEach(function (id) {
+                //for (const fiction of this.fictions){ 
+                var fiction = RRL.fictions[id];
+                title_choices += "<option value=\"" + fiction.title + "\">" + fiction.title + "</option>";
+            });
+            title_choices += "</select>";
+        }
+        var siteName = this.siteName;
+        var form = title_choices;
+        Object.keys(this.fictions).forEach(function (id) {
+            var fiction = RRL.fictions[id];
+            //for (const fiction of this.fictions){
+            var formName = "settings_" + siteName + '_' + fiction.ID;
+            console.log("displaying form: " + formName);
+            ipcRenderer.on("${formName}", function () { console.log("ipcRenderer got form request: " + formName); });
+            var title = fiction.title || "";
+            var folder = fiction.folder || "";
+            var pattern = fiction.pattern || "";
+            var number = fiction.number || 1;
+            var time = fiction.time || "00:00";
+            var ID = fiction.ID || "undefined";
+            form += "\n          <form id=\"" + formName + "\" onSubmit=\"JavaScript:sendForm(event, '" + formName + "')\">\n            <fieldset>\n            <legend> Site settings, " + siteName + "</legend>\n            <input type=hidden name=order value=\"changeUpdateSettings\"/>\n            <input type=hidden name=ID value=\"" + ID + "\"/>\n            Fiction name: <input name=title value=\"" + title + "\"/><br/>\n            Fiction ID: " + ID + "<br/>\n            Folder path: <input name=folder value=\"" + folder + "\"/><br/> \n            Chapter Title Pattern: <input name=pattern value=\"" + pattern + "\"/><br/> \n            Updates on <input name=\"time\" type=\"time\" value=\"" + time + "\"/><br/>\n            Daily update<br/>\n            Weekday updates on <select name=\"weekday\">\n              <option value=\"monday\">monday</option>\n              <option value=\"tuesday\">tuesday</option>\n              <option value=\"wednesday\">wednesday</option>\n              <option value=\"thursday\">thursday</option>\n              <option value=\"friday\">friday</option>\n              <option value=\"saturday\">saturday</option>\n              <option value=\"sunday\">sunday</option>\n            </select>\n            Number of chapters per update: <input name=number value=\"" + number + "\"/>\n            <input type=submit value=\"Update Settings\"/>\n            </fieldset>\n          </form>\n          ";
+        });
+        form += "\n        <form id=\"add_fiction\" onSubmit=\"JavaScript:sendForm(event, 'add_fiction')\">\n          <fieldset>\n            <legend>Add new fiction</legend>\n            <input type=hidden name=order value=\"loadFictions\"/>\n            <input type=submit value=\"Update Fictions\"/>\n          </fieldset>\n        </form>\n        ";
+        return form;
     };
     //------------------------------------------------------------------------------
     //------------------------------------------------------------------------------    
@@ -539,6 +678,7 @@ var RRL = /** @class */ (function (_super) {
     RRL.siteName = "RRL";
     RRL.baseURL = "https://deployment.royalroad.com";
     RRL.actionPage = "https://deployment.royalroad.com/account/betalogin";
+    RRL.fictionsPage = "https://deployment.royalroad.com/my/fictions";
     return RRL;
 }(website));
 exports.RRL = RRL;

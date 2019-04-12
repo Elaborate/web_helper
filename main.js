@@ -13,7 +13,7 @@ function createWindow() {
         protocol: 'file',
         slashes: true
     }));
-    console.log("testing cosole.log");
+    //console.log("testing console.log")
     //open devtools
     win.webContents.openDevTools();
     win.on('closed', function () { win = null; });
@@ -26,5 +26,8 @@ app.on('window-all-closed', function () {
     if (process.platform !== 'darwin') {
         app.quit();
     }
+});
+app.on('uncaughtException', function (error) {
+    console.log(error.stack);
 });
 //# sourceMappingURL=main.js.map

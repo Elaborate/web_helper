@@ -18,7 +18,7 @@ function createWindow(){
         protocol: 'file', 
         slashes: true
     }));
-    console.log("testing cosole.log")
+    //console.log("testing console.log")
     //open devtools
     win.webContents.openDevTools(); 
 
@@ -33,3 +33,7 @@ function createWindow(){
 app.on('window-all-closed', () => {
     if(process.platform !== 'darwin'){app.quit();}
 });
+
+app.on('uncaughtException', function (error) {
+    console.log(error.stack);
+ });

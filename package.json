@@ -1,5 +1,5 @@
 {
-  "name": "rrl_updater",
+  "name": "web_helper",
   "version": "0.0.1",
   "description": "Application to upload chapters to RRL for you",
   "main": "main.js",
@@ -17,5 +17,9 @@
   },
   "devDependencies": {
     "electron-rebuild": "^1.8.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Elaborate/web_helper.git"
   }
 }
