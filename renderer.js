@@ -1,4 +1,4 @@
-/* //Fount this on stackoverflow
+/* //Found this on stackoverflow, by TibTibs
 function serialize(form, evt){
     var evt    = evt || window.event;
     evt.target = evt.target || evt.srcElement || null;
@@ -28,7 +28,7 @@ function serialize(form, evt){
 }
 */
 
-function serialize(form){
+function serialize(form){ //Edited because I hate excessive nesting, and also didn't need events. 
     var field, query='';
     if(!(typeof form == 'object' && form.nodeName == "FORM")) return;
     for(i=form.elements.length-1; i>=0; i--){
