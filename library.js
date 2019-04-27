@@ -1,17 +1,4 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -20,86 +7,82 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-var accounts = require('./accounts.json');
-var request = require('request');
-var cheerio = require('cheerio');
-var electron = require('electron');
-var remote = require('electron').remote;
-var session = require('electron').session;
-var react = require('react');
-var BrowserWindow = require('electron').BrowserWindow;
-var ipcRenderer = require('electron').ipcRenderer;
-var ipcMain = (require('electron') || electron.remote.ipcMain).ipcMain;
-//try{ipcMain}
-//const keytar = require('keytar')
-//var ipc = electron.ipcMain;
-//investigate(ipcMain);
-//ipcRenderer.on('gpu', (_, gpu) => {
-//  console.log(gpu)
-//})
+const accounts = require('./accounts.json');
+//const request = require('request');
+const cheerio = require('cheerio');
+const electron = require('electron');
+const { remote } = require('electron');
+const { session } = require('electron');
+const react = require('react');
+const { BrowserWindow } = require('electron');
+const { ipcRenderer } = require('electron');
+const { ipcMain } = require('electron') || electron.remote.ipcMain;
+const request = require("request-promise");
+//import * as cheerio from "cheerio";
+request.defaults({ jar: true });
 //--------------------------------------------------------------
 //--------------------------------------------------------------
 //Debugging function
-function investigate(obj, space, path, parent, grandparent) {
-    if (space === void 0) { space = 0; }
-    if (path === void 0) { path = obj; }
-    if (parent === void 0) { parent = ""; }
-    if (grandparent === void 0) { grandparent = ""; }
+function investigate(obj, space = 0, path = obj, parent = null, grandparent = null) {
     console.log("Investigating " + path);
     if (obj)
         Object.keys(obj).forEach(function (k, i) {
-            var type = typeof obj[k];
-            var recursive = (k == parent || k == grandparent);
-            if (!recursive && (type == 'object'))
-                investigate(obj[k], space + 1, path + '/' + k, k, parent);
-            else if (type == 'function')
-                console.log('  '.repeat(space) + " " + k + "(" + type + ")");
-            else
-                console.log('  '.repeat(space) + " " + k + "(" + type + "): " + obj[k]);
+            try {
+                const type = typeof obj[k];
+                const recursive = (k == "parent" || k == "next" || k == "prev" || obj[k] == obj || obj[k] == parent || obj[k] == grandparent);
+                if (!recursive && space < 5 && (type == 'object'))
+                    investigate(obj[k], space + 1, path + '/' + k, obj, parent);
+                else if (type == 'function')
+                    console.log(`${'  '.repeat(space)} ${k}(${type})`);
+                else
+                    console.log(`${'  '.repeat(space)} ${k}(${type}): ${obj[k]}`);
+            }
+            catch (_a) {
+                console.log(k + " not viewable");
+            }
         });
 }
 exports.investigate = investigate;
 //--------------------------------------------------------------
 //--------------------------------------------------------------
+//Searching function
+function contains(obj, query, space = 0, path = obj.name, parent = null, grandparent = null) {
+    console.log("Investigating " + obj.name);
+    let attr = "";
+    Object.keys(obj).forEach(function (k, i) { attr += " " + k; });
+    console.log("Keys: " + attr);
+    if (obj)
+        obj.children.forEach(function (k, i) {
+            try {
+                const type = i.name || k || typeof obj[k];
+                const data = i.val() || i.toString() || i.data || "";
+                console.log(`${'  '.repeat(space)} ${type}: ${data}`);
+                //investigate(i);
+                if (data && typeof data == 'string' && data.includes(query))
+                    return true;
+                const recursive = (k == "parent" || k == "next" || k == "prev" || obj[k] == obj || obj[k] == parent || obj[k] == grandparent);
+                if (!recursive && space < 5 && (type == 'object') && contains(obj[k], query, space + 1, path + '/' + k, obj, parent))
+                    return true;
+            }
+            catch (err) {
+                console.log(err.message);
+            }
+        });
+    return false;
+}
+exports.contains = contains;
+//--------------------------------------------------------------
+//--------------------------------------------------------------
 //Webite, Object/Interface for websites and stuff. 
-var website = /** @class */ (function () {
-    function website() {
-    }
-    website.test1 = function () { return "inheritance works.<br/>\n"; };
-    website.test2 = function () { return "overriding doesn't work.<br/>\n"; };
-    website.test3 = function () { return "This is from the original Class...<br/>\n"; };
-    website.test4 = function () { return this.test3(); };
+class website {
+    static test1() { return "inheritance works.<br/>\n"; }
+    static test2() { return "overriding doesn't work.<br/>\n"; }
+    static test3() { return "This is from the original Class...<br/>\n"; }
+    static test4() { return this.test3(); }
     //Methods:
     //loadUpdateSettings, loads settings for when and what to update from file
-    website.loadUpdateSettings = function () {
+    static loadUpdateSettings() {
         try {
             this.username = accounts[this.siteName].username;
             this.password = accounts[this.siteName].password;
@@ -108,114 +91,93 @@ var website = /** @class */ (function () {
             this.username = "";
             this.password = "";
         }
-    };
+    }
     //Initialize, sets up object
-    website.init = function () {
-        var _this = this;
+    static init() {
+        console.error('Init():');
         if (this.initiated == true)
             return;
         this.initiated = true;
         if (this.loaded == false)
             this.loadUpdateSettings();
-        /*
-        this.account = keytar.findCredentials(this.siteName)
-        this.account.then(function(x){
-          if (!x === undefined){
-            console.log(x)
-            investigate(x)
-            this.username = x.account;
-            this.password = x.password;
-          }
-        }).catch(function(e){console.log(`Cannot find username or password for service: ${e.message}`)})
-        */
         //Open window to do web stuff. 
         try {
             this.window = new BrowserWindow({ width: 800, height: 600 });
         }
         catch (_a) {
-            var BrowserWindow_1 = require('electron').remote.BrowserWindow;
-            this.window = new BrowserWindow_1({ width: 800, height: 600 });
+            const { BrowserWindow } = require('electron').remote;
+            this.window = new BrowserWindow({ width: 800, height: 600 });
         }
         // get all cookies
         this.cookies = new Array;
-        this.window.webContents.on('did-finish-load', function () {
-            _this.window.webContents.session.cookies.get({}, function (error, cookies) { return __awaiter(_this, void 0, void 0, function () {
-                var _this = this;
-                return __generator(this, function (_a) {
-                    if (error) {
-                        console.error('Error getting cookies:', error);
-                        return [2 /*return*/];
+        this.window.webContents.on('did-finish-load', () => {
+            this.window.webContents.session.cookies.get({}, (error, cookies) => __awaiter(this, void 0, void 0, function* () {
+                if (error) {
+                    console.error('Error getting cookies:', error);
+                    return;
+                }
+                // store cookies
+                cookies.forEach(c => {
+                    //console.log("Cookie:"+JSON.stringify(c));
+                    try {
+                        this.cookies.push(c);
                     }
-                    // store cookies
-                    cookies.forEach(function (c) {
-                        //console.log("Cookie:"+JSON.stringify(c));
-                        try {
-                            _this.cookies.push(c);
-                        }
-                        catch (error) {
-                            console.log("Failed: %s", error.message);
-                        }
-                    });
-                    return [2 /*return*/];
+                    catch (error) {
+                        console.log("Failed: %s", error.message);
+                    }
                 });
-            }); });
+            }));
         });
-    };
-    website.displayAccountForm = function () {
+    }
+    static displayAccountForm() {
         this.loadUpdateSettings();
-        var formName = "account_" + this.siteName;
+        let formName = "account_" + this.siteName;
         ipcRenderer.on("${formName}", function () { console.log("ipcRenderer got form request: " + formName); });
-        return "\n      <form id=\"" + formName + "\" onSubmit=\"JavaScript:sendForm(event, '" + formName + "')\">\n      <fieldset>\n        <legend>Account Information, " + this.siteName + "</legend>\n        <input type=hidden name=service value=\"" + this.siteName + "\"/>\n        <input type=hidden name=order value=\"changeAccountDetails\"/>\n        <input name=username placeholder=email value=\"" + this.username + "\"/>\n        <input type=password placeholder=password name=password value=\"" + this.password + "\"/>\n        <input type=submit value=\"Change Account Data\"/>\n      </fieldset>\n      </form>\n      ";
-    };
+        return `
+      <form id="${formName}" onSubmit="JavaScript:sendForm(event, '${formName}')">
+      <fieldset>
+        <legend>Account Information, ${this.siteName}</legend>
+        <input type=hidden name=service value="${this.siteName}"/>
+        <input type=hidden name=order value="changeAccountDetails"/>
+        <input name=username placeholder=email value="${this.username}"/>
+        <input type=password placeholder=password name=password value="${this.password}"/>
+        <input type=submit value="Change Account Data"/>
+      </fieldset>
+      </form>
+      `;
+    }
     //------------------------------------------------------------------------------
     //------------------------------------------------------------------------------
-    website.message = function (name, form) {
-        //alert("RRL.message got form request: "+name);
-        /*
-        try {ipcRenderer.send(name, form);}
-        catch{console.log("No ipcRenderer");
-        try{ipcMain.send(name, form);}
-        catch{console.log("No ipcMain");}
-        */
+    //---- MESSAGE ------- Recieves orders from forms via renderer.js
+    static message(name, form) {
         console.log("MESSAGE RECEIVED!");
-        /*
-        //Extract inputs from form.
-        var $ = cheerio.load(form);
-        var input = $('input');
-        var args={};
-        input.each(function(i,element){
-          console.log("field "+element.attribs['name']+": "+element.attribs['value']);
-          args[element.attribs['name']]=element.attribs['value'];
-          });
-  */
         var args = {};
         var split = form.split("&");
         split.forEach(function (x) {
-            var y = x.split('=');
+            const y = x.split('=');
             console.log(y[0] + " " + y[1]);
-            var new_arg = decodeURIComponent(y[1]);
+            let new_arg = decodeURIComponent(y[1].replace(/\+/g, '%20'));
             if (new_arg.includes(','))
                 new_arg = split(',');
             args[y[0]] = new_arg;
         });
         //Call the function specified in form input "order"  
-        //investigate(args);
         try {
             this[args["order"]](args);
         }
         catch (e) {
-            console.log(this.siteName + (" method called '" + args["order"] + "' did not work. " + e.message + "\n      \n      \n      "));
+            console.log(`${this.siteName} method '${args["order"]}' did not work. ${e.message}`);
             investigate(args);
         }
-    };
+    }
     //------------------------------------------------------------------------------
     //------------------------------------------------------------------------------
     //changeAccountDetails saves username and password in file. 
     //Encrypt later? 
-    website.changeAccountDetails = function (args) {
+    static changeAccountDetails(args) {
         return this._changeAccountDetails(args.service, args.username, args.password);
-    };
-    website._changeAccountDetails = function (service, username, password) {
+    }
+    static _changeAccountDetails(service, username, password) {
         //keytar.setPassword(this.siteName, this.username, this.password);
         accounts[service] = Object();
         accounts[service].username = username;
@@ -228,70 +190,680 @@ var website = /** @class */ (function () {
             console.log('writing to ' + "accounts.json");
         });
         return "success";
-    };
+    }
     //------------------------------------------------------------------------------
     //------------------------------------------------------------------------------
     //login, logins to site
-    website.login = function () { return "success"; };
+    static login() { return "success"; }
     //logout 
-    website.logout = function () { return "success"; };
+    static logout() { return "success"; }
     //displayUpdateSettings, displays HTML form to change settings for site updates
-    website.displayUpdateSettings = function () { return "success"; };
+    static displayUpdateSettings() { return "success"; }
     //changeUpdateSettings, saves changed settings on file
-    website.saveUpdateSettings = function () { return "success"; };
+    static saveUpdateSettings() { return "success"; }
     //loadAccountDetails, gets username and password from encrypted file 
-    website.loadAccountDetails = function () { return "success"; };
+    static loadAccountDetails() { return "success"; }
     //formatChapter, transforms chapter into acceptable format for site.  
-    website.formatChapter = function () { return "success"; };
+    static formatChapter() { return "success"; }
     //getPublishedChapters, gets list of already published chapters
-    website.getPublishedChapters = function () { return "success"; };
+    static getPublishedChapters() { return "success"; }
     //getUnpublishedChapters, gets list of yet-to-be-published chapters on site
-    website.getUnublishedChapters = function () { return "success"; };
+    static getUnublishedChapters() { return "success"; }
     //publishChapterOnDate (Date, chapter)
-    website.publishChapterOnDate = function () { return "success"; };
+    static publishChapterOnDate() { return "success"; }
     //publishBatchOnDate (Date, chapter1, chapter2...), batch function calls publishChapterOnDate
-    website.publishBatchOnDate = function () { return "success"; };
+    static publishBatchOnDate() { return "success"; }
     //batchRename, replaces chapter
-    website.batchRename = function () { return "success"; };
+    static batchRename() { return "success"; }
     //run, logs in, uploads chapters according to settings, 
     //double-checks that every chapter that should be uploaded IS uploaded, logs out
-    website.run = function () { return "success"; };
-    return website;
-}());
+    static run() { return "success"; }
+}
 exports.website = website;
 //===============================================================
 //===============================================================
 //Object RRL, inherits from Site
-var RRL = /** @class */ (function (_super) {
-    __extends(RRL, _super);
-    function RRL() {
-        return _super !== null && _super.apply(this, arguments) || this;
+class RRL extends website {
+    static test() { return this.test1() + this.test2() + this.test3() + super.test3() + this.test4(); }
+    static test2() { return "overwriting works.<br/>\n"; }
+    static test3() { return "This is from the extended Class...<br/>\n"; }
+    static init() {
+        super.init();
     }
-    RRL.test = function () { return this.test1() + this.test2() + this.test3() + _super.test3.call(this) + this.test4(); };
-    RRL.test2 = function () { return "overwriting works.<br/>\n"; };
-    RRL.test3 = function () { return "This is from the extended Class...<br/>\n"; };
-    RRL.init = function () {
-        _super.init.call(this);
-    };
-    //Dealing with responses
-    /*
-        static bodyResponse(event,payload) {
-          RRL.hasToken(null, RRL.getTokenFromHTML(payload));
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    // Get Cookie and __RequestVerificationToken
+    static GetCookieAndRVT(uri) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log("Getting Cookie and RVT at URI '" + uri + "'");
+            try {
+                const options = {
+                    method: "GET",
+                    uri,
+                    resolveWithFullResponse: true
+                };
+                const res = yield request(options);
+                const cookie = res.headers["set-cookie"];
+                const rvtName = "__RequestVerificationToken";
+                const $ = cheerio.load(res.body);
+                const rvt = $(`input[name=${rvtName}]`).val();
+                this.cookies = cookie;
+                this.token = rvt;
+                return {
+                    rvt,
+                    cookie
+                };
+            }
+            catch (err) {
+                console.log("Error in GetCookieAndRVT: " + err.message);
+                console.log(JSON.stringify(err, null, 2));
+                return;
+            }
+        });
+    }
+    static Login(uri = this.actionPage, username = this.username, password = this.password) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log(`Logging in to '${uri}' as '${username}', with pw: '${password}'.`);
+            try {
+                const session = yield RRL.GetCookieAndRVT(uri);
+                if (!session) {
+                    console.log("Failed to get Cookie and RVT.");
+                    return;
+                }
+                const options = {
+                    method: "POST",
+                    simple: false,
+                    uri,
+                    form: {
+                        email: username,
+                        password: password,
+                        remember: "false",
+                        __RequestVerificationToken: session.rvt
+                    },
+                    headers: {
+                        cookie: session.cookie
+                    },
+                    resolveWithFullResponse: true
+                };
+                const res = yield request(options);
+                session.cookie = res.headers["set-cookie"];
+                session.payload = Object.assign({}, session.payload, { username });
+                return session;
+            }
+            catch (err) {
+                console.log("Error in login: " + err.message);
+                console.log(JSON.stringify(err, null, 2));
+                return;
+            }
+        });
+    }
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    //Log in the 'right' way.
+    static login_request() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.loadUpdateSettings();
+            console.log('Login Wrapper function... username: ' + this.username);
+            if (this.loggedIn) {
+                console.log("Aöready logged in. ");
+                return this.session;
+            }
+            this.session = yield this.Login(this.actionPage, this.username, this.password);
+            //console.log("SESSION1: "+JSON.stringify(ret, null, 2));
+            this.userID = yield this.GetUserId();
+            //console.log("SESSION2: "+JSON.stringify(ses, null, 2));
+            if (this.userID) {
+                this.loggedIn = true;
+                console.log("Logged in. ");
+            }
+            return this.session;
+        });
+    }
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    //BOOKMARK
+    static bookmark(args) { this._bookmark(args.fictionNr); }
+    static _bookmark(fictionNr) {
+        console.log("calling bookmark()");
+        this.loadUpdateSettings();
+        //const {ipcMain} = require('electron');
+        //if (!this.loggedIn) this.login(); 
+        this.bookmark_request();
+    }
+    static GetUserId(session = this.session, uri = this.baseURL) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log('Getting ID...');
+            console.log('Cookie: ' + session.cookie);
+            try {
+                const options = {
+                    method: "GET",
+                    uri: uri,
+                    headers: {
+                        cookie: session.cookie
+                    }
+                };
+                const res = yield request(options);
+                if (!session.payload.id) {
+                    const $ = cheerio.load(res, { xmlMode: false });
+                    // Positive Lookbehind Regular Expression.  Thank you Regex101
+                    let reg = /(?<=window.userId\s=\s)\d\d\d\d\d/gm;
+                    let matches = reg.exec(res);
+                    if (!!matches) {
+                        session.payload = Object.assign({}, session.payload, { userId: matches[0] });
+                    }
+                }
+                console.log("user id = " + session.payload.userId);
+                this.session = session;
+                return session.payload.userId;
+            }
+            catch (err) {
+                console.log("Error: " + err.message);
+                console.log(JSON.stringify(err, null, 2));
+                return;
+            }
+        });
+    }
+    //----------------------------------------------
+    //----------------------------------------------
+    //Bookmark a novel
+    static bookmark_request(fictionNr = 4293, session = this.session) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log("bookmarking via request");
+            //investigate(RRL.session);
+            session = this.session || (yield this.login_request());
+            console.log('Cookie: ' + session.cookie);
+            console.log('Cookie2: ' + this.session.cookie);
+            try {
+                const options = {
+                    method: "GET",
+                    baseUrl: this.baseURL,
+                    url: "/fictions/setbookmark/" + fictionNr,
+                    qs: {
+                        type: "follow",
+                        mark: "True",
+                    },
+                    headers: {
+                        cookie: session.cookie
+                    }
+                };
+                console.log("loading site: " + options.url);
+                const res = yield request(options);
+                console.log("loaded site: " + res.href);
+                console.log("bookmarked");
+                return session;
+            }
+            catch (err) {
+                console.log("Error in bookmark_request: " + err.message);
+                //onsole.log(JSON.stringify(err, null, 2));
+                return;
+            }
+        });
+    }
+    static saveCookies(cookies) {
+        this.cookies = cookies;
+        console.log("cookies: " + cookies);
+    }
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    static loadFictions() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.loadUpdateSettings();
+            const fictions = yield this.loadFictions_request();
+            this.updateFictions(fictions);
+            return "success";
+        });
+    }
+    //----------------------------------------------
+    //----------------------------------------------
+    //Bookmark a novel
+    static loadFictions_request(session = this.session) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log("loading fics via request");
+            //investigate(RRL.session);
+            session = this.session || (yield this.login_request());
+            const address = this.fictionsPage;
+            try {
+                const options = {
+                    method: "GET",
+                    uri: address,
+                    headers: {
+                        cookie: session.cookie
+                    }
+                };
+                console.log("loading site: " + address);
+                const res = yield request(options);
+                //Processing
+                console.log("got fics");
+                const cheerio = require('cheerio');
+                var $ = cheerio.load(res);
+                var links = $('a');
+                console.log("loaded html: " + links.html());
+                var result = [];
+                var query = "/fiction/chapter/new";
+                links.each(function (i, el) {
+                    const element = $(this);
+                    console.log("field " + i + ": " + element.attr('href'));
+                    if (element.attr('href') && element.attr('href').includes(query)) {
+                        console.log("fiction: " + element.attr('href'));
+                        result.push(element.attr('href').split('/').slice(-1)[0]);
+                    }
+                });
+                var result_string = "order=updateFictions&fictions=" + result.join(',');
+                return result;
+            }
+            catch (err) {
+                console.log("Error in loadFictions_request: " + err.message);
+                //console.log(JSON.stringify(err, null, 2));
+                return;
+            }
+        });
+    }
+    static _loadFictions() {
+        if (!this.loggedIn) {
+            console.log("not logged in");
+            return;
+        }
+        this.init();
+        this.getToken_win();
+        console.log('Loading Fictions via a browser window.');
+        this.window.loadURL(this.fictionsPage);
+        this.window.webContents.openDevTools();
+        this.window.webContents.once('dom-ready', () => {
+            console.log("Finding Fictions");
+            RRL.window.webContents.executeJavaScript(`     
+        const cheerio = require('cheerio');
+        var $ = cheerio.load(document.body.innerHTML);
+        var links = $('a');
+        var result = [];
+        var query = "/fiction/submission/edit?id=";
+        links.each(function(i,element){
+          //console.log("field "+element.attribs['name']+": "+element.attribs['value']);
+          if (element.attribs['href'] && element.attribs['href'].includes(query)){ 
+            console.log("fiction: "+element.attribs['href']);
+            result.push(element.attribs['href'].split('=')[1]);
           }
-    
-        static hasToken(event, payload) {
-          // BLAH
-          }
-    */
+          });  
+        var result_string="order=updateFictions&fictions="+result.join(','); 
+        //alert("finding fictions: "+result_string)
+        require('electron').ipcRenderer.send('hasGottenFictions', result_string);
+        `);
+            return this.token;
+        });
+    }
+    static updateFictions(fics) {
+        console.log('updating fictions');
+        //investigate(args); 
+        //const fics = new Array(args['fictions'])
+        //investigate(fics);
+        fics.forEach(function (id) {
+            if (!(RRL.fictions[id])) {
+                console.log('adding fiction ' + id);
+                RRL.fictions[id] = {};
+                RRL.fictions[id]["ID"] = id;
+            }
+            else
+                console.log('ignoring fiction ' + id);
+        });
+        console.log('converting into JSON: ');
+        investigate(RRL.fictions);
+        const settingsFile = RRL.siteName + ".json";
+        var fs = require('fs');
+        var jsonString = JSON.stringify(RRL.fictions);
+        console.log(jsonString);
+        fs.writeFile(settingsFile, jsonString, function (err) {
+            if (err)
+                return console.log(err);
+            console.log('writing to ' + settingsFile);
+        });
+    }
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    //displayScheduledReleases
+    static displayScheduledReleases() {
+        this.loadUpdateSettings();
+        console.log('displaying releases: ' + JSON.stringify(this.releases));
+        console.log('releases has type: ' + typeof this.releases);
+        const formName = "releases";
+        let schedule = "";
+        Object.keys(this.releases).forEach(function (id, i) {
+            const chapter = RRL.releases[id];
+            let title = chapter['title'];
+            try {
+                const pattern = RRL.fictions[chapter['novelID']].pattern;
+                if (pattern)
+                    title = chapter['title'].replace(pattern, "");
+            }
+            catch (_a) { }
+            const now = new Date().getTime();
+            const then = new Date(chapter['time']).getTime();
+            ;
+            const time = (then - now);
+            const days = Math.floor(time / 1000 / 60 / 60 / 24);
+            const hours = Math.floor((time / 1000 / 60 / 60) % 24);
+            if (!!id)
+                schedule += `
+          <li>${title} - ${days} days, ${hours} hours.</li>
+        `;
+        });
+        let form = `
+      <form id="${formName}" onSubmit="JavaScript:sendForm(event, '${formName}')">
+      <fieldset>
+      <legend> Scheduled Releases, ${RRL.siteName}</legend>
+      <ul>${schedule}</ul>
+      <input type=hidden name=order value="downloadScheduledReleases"/>
+      <input type=submit value="Download Releases"/>
+      </fieldset>
+    </form>
+      `;
+        return form;
+    }
+    static saveScheduledReleases(chapters) {
+        console.log('updating releases: ' + JSON.stringify(chapters));
+        //investigate(args);
+        /*
+        const chapters = new Array(args['releases'])
+        //investigate(fics);
+        const fictionID=args['fictionID'];
+        this.releases[fictionID]={};
+        chapters.forEach(function(id){
+          console.log('adding chapter '+id);
+          RRL.releases[id]={};
+          RRL.releases[id]["ID"] = id;
+          RRL.releases[id]["title"] = chapters[id].title;
+          RRL.releases[id]["time"] = chapters[id].time;
+        })
+        console.log('converting into JSON: ');
+        investigate(RRL.fictions);
+  */
+        const settingsFile = RRL.siteName + "_releases.json";
+        var fs = require('fs');
+        var jsonString = JSON.stringify(RRL.releases);
+        console.log(jsonString);
+        fs.writeFile(settingsFile, jsonString, function (err) {
+            if (err)
+                return console.log(err);
+            console.log('writing to ' + settingsFile);
+        });
+    }
+    static downloadScheduledReleases_request(novelID = 12147, session = this.session) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.loadUpdateSettings();
+            console.log("downloading releases for " + novelID + " via request");
+            console.log("username: " + this.username + " pw: " + this.password);
+            //investigate(RRL.session);
+            session = this.session || (yield this.login_request());
+            //console.log('Cookie: '+session.cookie);
+            //console.log('Cookie2: '+this.session.cookie);
+            const address = 'https://deployment.royalroad.com/my/fiction/' + novelID;
+            try {
+                const options = {
+                    method: "GET",
+                    uri: address,
+                    qs: {
+                        type: "follow",
+                        mark: "True",
+                    },
+                    headers: {
+                        cookie: session.cookie
+                    }
+                };
+                console.log("loading site: " + address);
+                const res = yield request(options);
+                var $ = cheerio.load(res);
+                console.log("loaded site: " + typeof res + "length: " + res.length);
+                var links = $('tr');
+                var result = {};
+                var query = "Unschedule";
+                links.each(function (i, element) {
+                    if ($(links[i]).text().includes(query)) {
+                        const title = $($(links[i]).find('td')[0]).text().trim();
+                        const time = $(links[i]).find('time').attr('datetime');
+                        const id = $(links[i]).find('form').attr('action').split('/').slice(-1)[0];
+                        result[id] = {};
+                        result[id]['novelID'] = novelID;
+                        result[id]['title'] = title;
+                        result[id]['time'] = time;
+                        console.log("chapter '" + title + "' updates " + time + " id:" + id);
+                    }
+                });
+                console.log(JSON.stringify(result));
+                RRL.releases = result;
+                return result;
+            }
+            catch (err) {
+                console.log("Error in release download: " + err.message);
+                //console.log(JSON.stringify(err, null, 2));
+                return;
+            }
+        });
+    }
+    static downloadScheduledReleases(novelID = 12147) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log("Calling downloadScheduledReleases for " + novelID);
+            const releases = yield this.downloadScheduledReleases_request(12147);
+            console.log("saving result: " + JSON.stringify(releases));
+            this.saveScheduledReleases(releases);
+            return "success";
+        });
+    }
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    //loadUpdateSettings, gets settings for site updates
+    static loadUpdateSettings() {
+        console.log("Loading update settings");
+        super.loadUpdateSettings();
+        this.chaptersPerUpdate = 7;
+        this.baseURL = "https://deployment.royalroad.com";
+        this.loggedIn = false;
+        this.token = "";
+        this.actionPage = "https://deployment.royalroad.com/account/betalogin";
+        //this.actionPage = "https://www.royalroad.com/account/externallogin?returnUrl=https%3A%2F%2Fwww.royalroad.com%2Fhome";
+        //this.loginPage = "https://www.royalroad.com/account/login"; 
+        this.siteName = "RRL";
+        this.gettingToken = false;
+        this.loggingIn = false;
+        this.bookmarked = false;
+        this.bookmarking = false;
+        const { ipcMain } = require('electron');
+        this.ipcMain = ipcMain;
+        try {
+            this.fictions = require('./' + RRL.siteName + '.json');
+        }
+        catch (_a) {
+            console.log("can't find RRL file");
+            this.fictions = {};
+        }
+        try {
+            this.releases = require('./' + RRL.siteName + '_releases.json');
+        }
+        catch (_b) {
+            console.log("can't find RRL schedule file");
+            this.releases = {};
+        }
+        try {
+            console.log(investigate(this.fictions));
+        }
+        catch (_c) {
+            console.log("can't investigate 'fictions'");
+        }
+    }
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    //changeUpdateSettings, changes settings for site updates
+    static changeUpdateSettings(fiction) {
+        this.loadUpdateSettings();
+        console.log("called changeUpdateSettings");
+        const settingsFile = this.siteName + ".json";
+        var fs = require('fs');
+        console.log("fiction: " + fiction.ID);
+        investigate(this.fictions);
+        this.fictions[fiction.ID] = fiction;
+        let jsonString = JSON.stringify(this.fictions, null, 2);
+        fs.writeFile(settingsFile, jsonString, function (err) {
+            if (err)
+                return console.log(err);
+            console.log("JSON: " + jsonString);
+            console.log('writing to ' + settingsFile);
+        });
+        return "success";
+    }
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    //displayUpdateSettings, displays HTML form to change settings for site updates
+    static displayUpdateSettings() {
+        console.log("displaying update settings");
+        this.loadUpdateSettings();
+        console.log("fictions: " + investigate(this.fictions));
+        console.log("# of fictions: " + Object.keys(this.fictions).length);
+        let title_choices = "";
+        if (Object.keys(this.fictions).length > 1) {
+            title_choices = "<select name=fic_title>";
+            Object.keys(this.fictions).forEach(function (id) {
+                //for (const fiction of this.fictions){ 
+                const fiction = RRL.fictions[id];
+                title_choices += `<option value="${fiction.title}">${fiction.title}</option>`;
+            });
+            title_choices += "</select>";
+        }
+        const siteName = this.siteName;
+        let form = title_choices;
+        Object.keys(this.fictions).forEach(function (id) {
+            let fiction = RRL.fictions[id];
+            //for (const fiction of this.fictions){
+            let formName = "settings_" + siteName + '_' + fiction.ID;
+            console.log("displaying form: " + formName);
+            ipcRenderer.on("${formName}", function () { console.log("ipcRenderer got form request: " + formName); });
+            const title = fiction.title || "";
+            const folder = fiction.folder || "";
+            const pattern = fiction.pattern || "";
+            const number = fiction.number || 1;
+            const time = fiction.time || "00:00";
+            const ID = fiction.ID || "undefined";
+            form += `
+          <form id="${formName}" onSubmit="JavaScript:sendForm(event, '${formName}')">
+            <fieldset>
+            <legend> Site settings, ${siteName}</legend>
+            <input type=hidden name=order value="changeUpdateSettings"/>
+            <input type=hidden name=ID value="${ID}"/>
+            Fiction name: <input name=title value="${title}"/><br/>
+            Fiction ID: ${ID}<br/>
+            Folder path: <input name=folder value="${folder}"/><br/> 
+            Chapter Title Pattern: <input name=pattern value="${pattern}"/><br/> 
+            Release on <input name="time" type="time" value="${time}"/><br/>
+            Daily update<br/>
+            Weekday updates on <select name="weekday">
+              <option value="monday">monday</option>
+              <option value="tuesday">tuesday</option>
+              <option value="wednesday">wednesday</option>
+              <option value="thursday">thursday</option>
+              <option value="friday">friday</option>
+              <option value="saturday">saturday</option>
+              <option value="sunday">sunday</option>
+            </select>
+            Number of chapters per update: <input name=number value="${number}"/>
+            <input type=submit value="Apply Release Settings"/>
+            </fieldset>
+          </form>
+          `;
+        });
+        form += `
+        <form id="add_fiction" onSubmit="JavaScript:sendForm(event, 'add_fiction')">
+          <fieldset>
+            <legend>Add new fiction</legend>
+            <input type=hidden name=order value="loadFictions"/>
+            <input type=submit value="Update Fictions"/>
+          </fieldset>
+        </form>
+        `;
+        return form;
+    }
+    //------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------    
+    //displayTestButtons, some function testing stuff
+    static displayTestButtons() {
+        let formName = "test_" + this.siteName;
+        ipcRenderer.on(formName, function () { console.log("got form request: " + formName); });
+        return `
+          <form id="${formName}" onSubmit="JavaScript:sendForm(event, '${formName}')">
+            <fieldset>
+              <legend> Test buttons </legend>
+              <input type=hidden name=FictionNr value="4293"/>
+              <input type=hidden name=order value="bookmark"/>
+              <input type=submit value="bookmark Iron Teeth"/>
+            </fieldset
+          </form>
+          `;
+    }
+    //----------------------------------------------
+    //----------------------------------------------
+    //        ***  OBSOLETE FUNCTIONS  ***
+    //----------------------------------------------
+    //----------------------------------------------
+    static _downloadScheduledReleases_win(novelID = 12147) {
+    }
+    //Tell window to visit login page and get their token
+    static getToken_win() {
+        let error;
+        let response;
+        let html;
+        if (this.token.length > 2) {
+            console.log("already has token");
+            return this.token;
+        }
+        this.init();
+        this.loadUpdateSettings();
+        console.log(`getting tokens from ${this.baseURL}`);
+        this.window.loadURL(this.baseURL);
+        //const {ipcMain} = require('electron');
+        ipcMain.on('body', function (event, body) {
+            console.log("Receiving token: ");
+            //console.log(body)
+            console.log(RRL.getTokenFromHTML(body));
+            event.sender.send('hasToken', "test");
+        });
+        this.window.webContents.once('dom-ready', () => {
+            RRL.window.webContents.executeJavaScript(`
+              //var token = document.getElementById("__RequestVerificationToken");
+              //require('electron').ipcRenderer.send('body', token);
+              require('electron').ipcRenderer.send('hasToken', document.body.innerHTML);
+              `);
+            return this.token;
+        });
+        return "Error";
+    }
+    ;
+    static bookmark_win(fictionNr = 4293) {
+        //const fictionNr = 4293; //Iron Teeth
+        if (!this.loggedIn)
+            this.login_win();
+        console.log('bookmarking using a browser window.');
+        const dataString = `type=follow&mark=true}`;
+        console.log(`Datastring: '${dataString}'`);
+        this.window.loadURL(`${this.baseURL}/fictions/setbookmark/${fictionNr}`, {
+            postData: [{
+                    type: 'rawData',
+                    bytes: Buffer.from(dataString)
+                }],
+            extraHeaders: 'Content-Type: application/x-www-form-urlencoded'
+        });
+        this.window.webContents.once('dom-ready', () => {
+            console.log("Detecting bookmark");
+            RRL.window.webContents.executeJavaScript(`
+          require('electron').ipcRenderer.send('hasBookmarked', document.body.innerHTML);
+          `);
+            return this.token;
+        });
+        return "bookmarking";
+    }
     //-----------------------------------------------------------------
     //-----------------------------------------------------------------
     //Visit login page and get their token
-    RRL.getToken = function () {
-        var error;
-        var response;
-        var html;
+    static getToken() {
+        let error;
+        let response;
+        let html;
         this.loadUpdateSettings();
-        console.log("getting tokens from " + this.baseURL);
+        console.log(`getting tokens from ${this.baseURL}`);
         request(this.baseURL, function (error, response, html) {
             if (!error && response.statusCode == 200) {
                 var $ = cheerio.load(html);
@@ -305,12 +877,12 @@ var RRL = /** @class */ (function (_super) {
             }
         });
         return "Error";
-    };
+    }
     ;
     //----------------------------------------------
     //----------------------------------------------
     //Get token from HTML and store it
-    RRL.getTokenFromHTML = function (html) {
+    static getTokenFromHTML(html) {
         console.log("getTokenFromHTML");
         var $ = cheerio.load(html);
         var input = $('input');
@@ -329,358 +901,69 @@ var RRL = /** @class */ (function (_super) {
             this.window.webContents.send("hasToken");
             return token;
         }
-        return "did not find token (" + token + ")";
-    };
-    //----------------------------------------------
-    //----------------------------------------------
-    //Tell window to visit login page and get their token
-    RRL.getToken_win = function () {
-        var _this = this;
-        var error;
-        var response;
-        var html;
-        if (this.token.length > 2) {
-            console.log("already has token");
-            return this.token;
-        }
-        this.init();
-        this.loadUpdateSettings();
-        console.log("getting tokens from " + this.baseURL);
-        this.window.loadURL(this.baseURL);
-        //const {ipcMain} = require('electron');
-        ipcMain.on('body', function (event, body) {
-            console.log("Receiving token: ");
-            //console.log(body)
-            console.log(RRL.getTokenFromHTML(body));
-            event.sender.send('hasToken', "test");
-        });
-        this.window.webContents.once('dom-ready', function () {
-            RRL.window.webContents.executeJavaScript("\n              //var token = document.getElementById(\"__RequestVerificationToken\");\n              //require('electron').ipcRenderer.send('body', token);\n              require('electron').ipcRenderer.send('hasToken', document.body.innerHTML);\n              ");
-            return _this.token;
-        });
-        return "Error";
-    };
-    ;
-    //-----------------------------------------------------------------
-    //-----------------------------------------------------------------
-    RRL.bookmark = function (args) { this._bookmark(args.fictionNr); };
-    RRL._bookmark = function (fictionNr) {
-        console.log("calling bookmark()");
-        this.loadUpdateSettings();
-        //const {ipcMain} = require('electron');
-        ipcMain.once('hasToken', function (event, body) {
-            RRL.getTokenFromHTML(body);
-            console.log("Has gotten Token.");
-            RRL.login_win();
-        });
-        ipcMain.once('hasLoggedIn', function (event, body) {
-            console.log("Has logged in.");
-            RRL.bookmark_win(fictionNr);
-        });
-        ipcMain.once('hasBookmarked', function (event, body) {
-            console.log("Has bookmarked.");
-        });
-        this.getToken_win();
-        /*
-       let time = 0;
-      while(true) {
-        if (!this.token && !this.gettingToken) this.getToken_win();
-        if (this.token && !this.loggedIn && !this.loggingIn) this.login_win();
-        if (this.loggedIn && !this.bookmarked && !this.bookmarking) this.bookmark_win();
-        if (this.token && this.loggedIn && this.bookmarked) break;
-        time++;
-        if (time>10000) {console.log("Bookmark() timed out"); break;}
-        }
-      this.bookmarked=false;
-      */
-    };
-    //----------------------------------------------
-    //----------------------------------------------
-    //Bookmark a novel
-    RRL.bookmark_win = function (fictionNr) {
-        var _this = this;
-        if (fictionNr === void 0) { fictionNr = 4293; }
-        //const fictionNr = 4293; //Iron Teeth
-        if (!this.loggedIn)
-            this.login_win();
-        console.log('bookmarking using a browser window.');
-        var dataString = "type=follow&mark=true}";
-        console.log("Datastring: '" + dataString + "'");
-        this.window.loadURL(this.baseURL + "/fictions/setbookmark/" + fictionNr, {
-            postData: [{
-                    type: 'rawData',
-                    bytes: Buffer.from(dataString)
-                }],
-            extraHeaders: 'Content-Type: application/x-www-form-urlencoded'
-        });
-        this.window.webContents.once('dom-ready', function () {
-            console.log("Detecting bookmark");
-            RRL.window.webContents.executeJavaScript("\n           require('electron').ipcRenderer.send('hasBookmarked', document.body.innerHTML);\n           ");
-            return _this.token;
-        });
-        return "bookmarking";
-    };
-    //----------------------------------------------
-    //----------------------------------------------
-    //Bookmark a novel
-    /*
-    static bookmark(): string{
-      if (!this.loggedIn) this.login();
-      //const token = this.getToken();
-      //this.token = token;
-
-      const fictionNr = 4293; //Iron Teeth
-      const command = `${this.baseURL}/fictions/setbookmark/${fictionNr}`;
-      console.log(`Bookmarking fiction, command: ${command}`);
-      RRL.pageLoaded = "test";
-      const formData = {
-                  //key-value pairs
-                  type: 'follow',
-                  mark: "True"
-                  };
-          const r = request.post({url: command, formData: formData}, function optionalCallback(err, httpResponse, body) {
-          if (err) { return console.error('upload failed:', err); }
-          console.log(`Command: '${command}', response: '${httpResponse}', body: '${body}'`);
-          return body;
-        });
-      return r;
-      return RRL.pageLoaded;
+        return `did not find token (${token})`;
     }
-    */
     //-----------------------------------------------------------------
     //-----------------------------------------------------------------
-    //Make a new window and use that to log in. Experimental. 
-    RRL.login_win = function () {
-        var _this = this;
-        if (this.loggedIn) {
-            console.log("already logged in");
-            return "error";
-        }
+    //Make a new window and use that to log in. Redundant. 
+    static login_win() {
+        /*
+        if (this.loggedIn) {console.log("already logged in"); return "error";}
         this.init();
         this.getToken_win();
         console.log('Logging in using a browser window.');
-        var formData = {
-            //key-value pairs
-            Email: this.username,
-            Password: this.password,
-            Remember: "false",
-            __RequestVerificationToken: this.token
-        };
-        var dataString = "email=" + formData.Email + "&password=" + formData.Password + "&remember=" + formData.Remember + "&__RequestVerificationToken=" + formData.__RequestVerificationToken;
-        console.log("Datastring: '" + dataString + "'");
-        this.window.loadURL("" + this.actionPage, {
-            postData: [{
-                    type: 'rawData',
-                    bytes: Buffer.from(dataString)
-                }],
-            extraHeaders: 'Content-Type: application/x-www-form-urlencoded'
+        const formData = {
+          //key-value pairs
+          Email: this.username,
+          Password: this.password,
+          Remember: "false",
+          __RequestVerificationToken: this.token
+          };
+          const dataString=`email=${formData.Email}&password=${formData.Password}&remember=${formData.Remember}&__RequestVerificationToken=${formData.__RequestVerificationToken}`
+        console.log(`Datastring: '${dataString}'`);
+        this.window.loadURL(`${this.actionPage}`, {
+      postData: [{
+        type: 'rawData',
+        bytes: Buffer.from(dataString)
+        }],
+      extraHeaders: 'Content-Type: application/x-www-form-urlencoded'
+      })
+  
+      ipcMain.once('hasCookies', (event, body) => {
+        const cookies = JSON.parse(body);
+        investigate(cookies);
+        RRL.cookies = cookies;
         });
-        this.window.webContents.once('dom-ready', function () {
-            console.log("Detecting login");
-            RRL.loggedIn = true;
-            RRL.window.webContents.executeJavaScript("\n        require('electron').ipcRenderer.send('hasLoggedIn', document.body.innerHTML);\n        ");
-            return _this.token;
-        });
-        return "success";
-    };
-    //-----------------------------------------------------------------
-    //-----------------------------------------------------------------
-    //Log in the 'right' way. Currently non-functional. 
-    RRL.login = function () {
-        console.log('Logging in');
-        var token = this.getToken();
-        this.token = token;
-        RRL.pageLoaded = "test";
-        var formData = {
-            //key-value pairs
-            Email: this.username,
-            Password: this.password,
-            Remember: "false",
-            __RequestVerificationToken: token
-        };
-        var r = request.post({ url: this.actionPage, formData: formData }, function optionalCallback(err, httpResponse, body) {
-            if (err) {
-                return console.error('upload failed:', err);
-            }
-            console.log('Upload successful!  Server responded with:', body);
-            return body;
-        });
-        var ses = session.fromPartition('persist:name');
-        console.log("Session info: " + ses.getUserAgent());
+  
+      this.window.webContents.once('dom-ready', () => {
+        console.log("Detecting login");
+        RRL.loggedIn=true;
+        const ses = session.fromPartition('persist:name');
+        console.log("Session info: "+ses.getUserAgent());
         // Get all cookies
-        ses.cookies.get({}, function (error, result) { return console.log('Found the following cookies', result); });
-        this.loggedIn = true;
-        return r;
-        return RRL.pageLoaded;
-    };
-    //-----------------------------------------------------------------
-    //-----------------------------------------------------------------
-    RRL.loadFictions = function () {
-        //<a href="/fiction/submission/edit?id=12134" class="btn btn-default col-xs-6">
-        console.log("calling loadFictions()");
-        this.loadUpdateSettings();
-        //const {ipcMain} = require('electron');
-        ipcMain.once('hasToken', function (event, body) {
-            RRL.getTokenFromHTML(body);
-            console.log("Has gotten Token.");
-            RRL.login_win();
+        ses.cookies.get(
+          {},
+          (error, result) => console.log('Found the following cookies', result)
+          )
+        RRL.window.webContents.executeJavaScript(`
+          let cookies="";
+          for (const c in document.cookie){
+            
+          }
+          require('electron').ipcRenderer.send('hasCookies', document.cookie);
+          require('electron').ipcRenderer.send('hasLoggedIn', document.body.innerHTML);
+          `
+          );
+        return this.token;
         });
-        ipcMain.once('hasLoggedIn', function (event, body) {
-            console.log("Has logged in.");
-            RRL._loadFictions();
-        });
-        ipcMain.once('hasGottenFictions', function (event, body) {
-            console.log("Has gotten fictions: " + body);
-            RRL.message('updateFictions', body);
-        });
-        this.getToken_win();
-    };
-    RRL._loadFictions = function () {
-        var _this = this;
-        if (!this.loggedIn) {
-            console.log("not logged in");
-            return;
-        }
-        this.init();
-        this.getToken_win();
-        console.log('Loading Fictions via a browser window.');
-        this.window.loadURL(this.fictionsPage);
-        this.window.webContents.openDevTools();
-        this.window.webContents.once('dom-ready', function () {
-            console.log("Finding Fictions");
-            RRL.window.webContents.executeJavaScript("\n        \n        const cheerio = require('cheerio');\n        var $ = cheerio.load(document.body.innerHTML);\n        var links = $('a');\n        var result = [];\n        var query = \"/fiction/submission/edit?id=\";\n        links.each(function(i,element){\n          //console.log(\"field \"+element.attribs['name']+\": \"+element.attribs['value']);\n          if (element.attribs['href'] && element.attribs['href'].includes(query)){ \n            console.log(\"fiction: \"+element.attribs['href']);\n            result.push(element.attribs['href'].split('=')[1]);\n          }\n          });  \n        var result_string=\"order=updateFictions&fictions=\"+result.join(','); \n        //alert(\"finding fictions: \"+result_string)\n        require('electron').ipcRenderer.send('hasGottenFictions', result_string);\n        ");
-            return _this.token;
-        });
-    };
-    RRL.updateFictions = function (args) {
-        console.log('updating fictions');
-        //investigate(args); 
-        var fics = new Array(args['fictions']);
-        //investigate(fics);
-        fics.forEach(function (id) {
-            if (!(RRL.fictions[id])) {
-                console.log('adding fiction ' + id);
-                RRL.fictions[id] = {};
-                RRL.fictions[id]["ID"] = id;
-            }
-            else
-                console.log('ignoring fiction ' + id);
-        });
-        console.log('converting into JSON: ');
-        investigate(RRL.fictions);
-        var settingsFile = RRL.siteName + ".json";
-        var fs = require('fs');
-        var jsonString = JSON.stringify(RRL.fictions);
-        console.log(jsonString);
-        fs.writeFile(settingsFile, jsonString, function (err) {
-            if (err)
-                return console.log(err);
-            console.log('writing to ' + settingsFile);
-        });
-    };
-    //-----------------------------------------------------------------
-    //-----------------------------------------------------------------
-    RRL.loadUpdateSettings = function () {
-        _super.loadUpdateSettings.call(this);
-        this.chaptersPerUpdate = 7;
-        this.baseURL = "https://deployment.royalroad.com";
-        this.loggedIn = false;
-        this.token = "";
-        this.actionPage = "https://deployment.royalroad.com/account/betalogin";
-        //this.actionPage = "https://www.royalroad.com/account/externallogin?returnUrl=https%3A%2F%2Fwww.royalroad.com%2Fhome";
-        //this.loginPage = "https://www.royalroad.com/account/login"; 
-        this.siteName = "RRL";
-        this.gettingToken = false;
-        this.loggingIn = false;
-        this.bookmarked = false;
-        this.bookmarking = false;
-        var ipcMain = require('electron').ipcMain;
-        this.ipcMain = ipcMain;
-        try {
-            this.fictions = require('./' + RRL.siteName + '.json');
-        }
-        catch (_a) {
-            console.log("can't find RRL file");
-            this.fictions = {};
-        }
-        try {
-            console.log(investigate(this.fictions));
-        }
-        catch (_b) {
-            console.log("can't investigate 'fictions'");
-        }
-    };
-    //-----------------------------------------------------------------
-    //-----------------------------------------------------------------
-    //changeUpdateSettings, changes settings for site updates
-    RRL.changeUpdateSettings = function (fiction) {
-        this.loadUpdateSettings();
-        console.log("called changeUpdateSettings");
-        var settingsFile = this.siteName + ".json";
-        var fs = require('fs');
-        console.log("fiction: " + fiction.ID);
-        investigate(this.fictions);
-        this.fictions[fiction.ID] = fiction;
-        var jsonString = JSON.stringify(this.fictions, null, 2);
-        fs.writeFile(settingsFile, jsonString, function (err) {
-            if (err)
-                return console.log(err);
-            console.log("JSON: " + jsonString);
-            console.log('writing to ' + settingsFile);
-        });
+        */
         return "success";
-    };
-    //-----------------------------------------------------------------
-    //-----------------------------------------------------------------
-    //displayUpdateSettings, displays HTML form to change settings for site updates
-    RRL.displayUpdateSettings = function () {
-        console.log("displaying update settings");
-        this.loadUpdateSettings();
-        console.log("fictions: " + investigate(this.fictions));
-        console.log("# of fictions: " + Object.keys(this.fictions).length);
-        var title_choices = "";
-        if (Object.keys(this.fictions).length > 1) {
-            title_choices = "<select name=fic_title>";
-            Object.keys(this.fictions).forEach(function (id) {
-                //for (const fiction of this.fictions){ 
-                var fiction = RRL.fictions[id];
-                title_choices += "<option value=\"" + fiction.title + "\">" + fiction.title + "</option>";
-            });
-            title_choices += "</select>";
-        }
-        var siteName = this.siteName;
-        var form = title_choices;
-        Object.keys(this.fictions).forEach(function (id) {
-            var fiction = RRL.fictions[id];
-            //for (const fiction of this.fictions){
-            var formName = "settings_" + siteName + '_' + fiction.ID;
-            console.log("displaying form: " + formName);
-            ipcRenderer.on("${formName}", function () { console.log("ipcRenderer got form request: " + formName); });
-            var title = fiction.title || "";
-            var folder = fiction.folder || "";
-            var pattern = fiction.pattern || "";
-            var number = fiction.number || 1;
-            var time = fiction.time || "00:00";
-            var ID = fiction.ID || "undefined";
-            form += "\n          <form id=\"" + formName + "\" onSubmit=\"JavaScript:sendForm(event, '" + formName + "')\">\n            <fieldset>\n            <legend> Site settings, " + siteName + "</legend>\n            <input type=hidden name=order value=\"changeUpdateSettings\"/>\n            <input type=hidden name=ID value=\"" + ID + "\"/>\n            Fiction name: <input name=title value=\"" + title + "\"/><br/>\n            Fiction ID: " + ID + "<br/>\n            Folder path: <input name=folder value=\"" + folder + "\"/><br/> \n            Chapter Title Pattern: <input name=pattern value=\"" + pattern + "\"/><br/> \n            Updates on <input name=\"time\" type=\"time\" value=\"" + time + "\"/><br/>\n            Daily update<br/>\n            Weekday updates on <select name=\"weekday\">\n              <option value=\"monday\">monday</option>\n              <option value=\"tuesday\">tuesday</option>\n              <option value=\"wednesday\">wednesday</option>\n              <option value=\"thursday\">thursday</option>\n              <option value=\"friday\">friday</option>\n              <option value=\"saturday\">saturday</option>\n              <option value=\"sunday\">sunday</option>\n            </select>\n            Number of chapters per update: <input name=number value=\"" + number + "\"/>\n            <input type=submit value=\"Update Settings\"/>\n            </fieldset>\n          </form>\n          ";
-        });
-        form += "\n        <form id=\"add_fiction\" onSubmit=\"JavaScript:sendForm(event, 'add_fiction')\">\n          <fieldset>\n            <legend>Add new fiction</legend>\n            <input type=hidden name=order value=\"loadFictions\"/>\n            <input type=submit value=\"Update Fictions\"/>\n          </fieldset>\n        </form>\n        ";
-        return form;
-    };
-    //------------------------------------------------------------------------------
-    //------------------------------------------------------------------------------    
-    //displayTestButtons, some function testing stuff
-    RRL.displayTestButtons = function () {
-        var formName = "test_" + this.siteName;
-        ipcRenderer.on(formName, function () { console.log("got form request: " + formName); });
-        return "\n          <form id=\"" + formName + "\" onSubmit=\"JavaScript:sendForm(event, '" + formName + "')\">\n            <fieldset>\n              <legend> Test buttons </legend>\n              <input type=hidden name=FictionNr value=\"4293\"/>\n              <input type=hidden name=order value=\"bookmark\"/>\n              <input type=submit value=\"bookmark Iron Teeth\"/>\n            </fieldset\n          </form>\n          ";
-    };
-    RRL.siteName = "RRL";
-    RRL.baseURL = "https://deployment.royalroad.com";
-    RRL.actionPage = "https://deployment.royalroad.com/account/betalogin";
-    RRL.fictionsPage = "https://deployment.royalroad.com/my/fictions";
-    return RRL;
-}(website));
+    }
+}
+RRL.siteName = "RRL";
+RRL.baseURL = "https://deployment.royalroad.com";
+RRL.actionPage = "https://deployment.royalroad.com/account/betalogin";
+RRL.fictionsPage = "https://deployment.royalroad.com/my/fictions";
 exports.RRL = RRL;
 //Outside the RRL class
 //const {ipcMain} = require('electron');

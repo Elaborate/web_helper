@@ -11,9 +11,11 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
     "electron": "^4.0.8",
+    "jquery": "^3.4.0",
     "keytar": "^4.4.1",
     "react": "^16.8.4",
-    "request": "^2.88.0"
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4"
   },
   "devDependencies": {
     "electron-rebuild": "^1.8.4"
