@@ -231,36 +231,41 @@ class RRL extends website {
         super.init();
     }
     //-----------------------------------------------------------------
+    //------------------- UPDATE MAIN WINDOW --------------------------
     //-----------------------------------------------------------------
-    // Get Cookie and __RequestVerificationToken
-    static GetCookieAndRVT(uri) {
+    static update() {
+        const path = require('path');
+        const url = require('url');
+        this.window.loadURL(url.format({
+            pathname: path.join(__dirname, 'index.html'),
+            protocol: 'file',
+            slashes: true
+        }));
+    }
+    //-----------------------------------------------------------------
+    //---------------------- LOG IN -----------------------------------
+    //-----------------------------------------------------------------
+    static login_request() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log("Getting Cookie and RVT at URI '" + uri + "'");
-            try {
-                const options = {
-                    method: "GET",
-                    uri,
-                    resolveWithFullResponse: true
-                };
-                const res = yield request(options);
-                const cookie = res.headers["set-cookie"];
-                const rvtName = "__RequestVerificationToken";
-                const $ = cheerio.load(res.body);
-                const rvt = $(`input[name=${rvtName}]`).val();
-                this.cookies = cookie;
-                this.token = rvt;
-                return {
-                    rvt,
-                    cookie
-                };
+            this.loadUpdateSettings();
+            console.log('Login Wrapper function... username: ' + this.username);
+            if (this.loggedIn) {
+                console.log("Aöready logged in. ");
+                return this.session;
             }
-            catch (err) {
-                console.log("Error in GetCookieAndRVT: " + err.message);
-                console.log(JSON.stringify(err, null, 2));
-                return;
+            this.session = yield this.Login(this.actionPage, this.username, this.password);
+            //console.log("SESSION1: "+JSON.stringify(ret, null, 2));
+            this.userID = yield this.GetUserId();
+            //console.log("SESSION2: "+JSON.stringify(ses, null, 2));
+            if (this.userID) {
+                this.loggedIn = true;
+                console.log("Logged in. ");
             }
+            return this.session;
         });
     }
+    //----------------------------------------------
+    //----------------------------------------------
     static Login(uri = this.actionPage, username = this.username, password = this.password) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log(`Logging in to '${uri}' as '${username}', with pw: '${password}'.`);
@@ -299,41 +304,41 @@ class RRL extends website {
     }
     //-----------------------------------------------------------------
     //-----------------------------------------------------------------
-    //Log in the 'right' way.
-    static login_request() {
+    // Get Cookie and __RequestVerificationToken
+    static GetCookieAndRVT(uri) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.loadUpdateSettings();
-            console.log('Login Wrapper function... username: ' + this.username);
-            if (this.loggedIn) {
-                console.log("Aöready logged in. ");
-                return this.session;
+            console.log("Getting Cookie and RVT at URI '" + uri + "'");
+            try {
+                const options = {
+                    method: "GET",
+                    uri,
+                    resolveWithFullResponse: true
+                };
+                const res = yield request(options);
+                const cookie = res.headers["set-cookie"];
+                const rvtName = "__RequestVerificationToken";
+                const $ = cheerio.load(res.body);
+                const rvt = $(`input[name=${rvtName}]`).val();
+                this.cookies = cookie;
+                this.token = rvt;
+                return {
+                    rvt,
+                    cookie
+                };
             }
-            this.session = yield this.Login(this.actionPage, this.username, this.password);
-            //console.log("SESSION1: "+JSON.stringify(ret, null, 2));
-            this.userID = yield this.GetUserId();
-            //console.log("SESSION2: "+JSON.stringify(ses, null, 2));
-            if (this.userID) {
-                this.loggedIn = true;
-                console.log("Logged in. ");
+            catch (err) {
+                console.log("Error in GetCookieAndRVT: " + err.message);
+                console.log(JSON.stringify(err, null, 2));
+                return;
             }
-            return this.session;
         });
     }
-    //-----------------------------------------------------------------
-    //-----------------------------------------------------------------
-    //BOOKMARK
-    static bookmark(args) { this._bookmark(args.fictionNr); }
-    static _bookmark(fictionNr) {
-        console.log("calling bookmark()");
-        this.loadUpdateSettings();
-        //const {ipcMain} = require('electron');
-        //if (!this.loggedIn) this.login(); 
-        this.bookmark_request();
-    }
+    //----------------------------------------------
+    //----------------------------------------------
     static GetUserId(session = this.session, uri = this.baseURL) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('Getting ID...');
-            console.log('Cookie: ' + session.cookie);
+            //console.log('Cookie: '+session.cookie);
             try {
                 const options = {
                     method: "GET",
@@ -363,59 +368,20 @@ class RRL extends website {
             }
         });
     }
-    //----------------------------------------------
-    //----------------------------------------------
-    //Bookmark a novel
-    static bookmark_request(fictionNr = 4293, session = this.session) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log("bookmarking via request");
-            //investigate(RRL.session);
-            session = this.session || (yield this.login_request());
-            console.log('Cookie: ' + session.cookie);
-            console.log('Cookie2: ' + this.session.cookie);
-            try {
-                const options = {
-                    method: "GET",
-                    baseUrl: this.baseURL,
-                    url: "/fictions/setbookmark/" + fictionNr,
-                    qs: {
-                        type: "follow",
-                        mark: "True",
-                    },
-                    headers: {
-                        cookie: session.cookie
-                    }
-                };
-                console.log("loading site: " + options.url);
-                const res = yield request(options);
-                console.log("loaded site: " + res.href);
-                console.log("bookmarked");
-                return session;
-            }
-            catch (err) {
-                console.log("Error in bookmark_request: " + err.message);
-                //onsole.log(JSON.stringify(err, null, 2));
-                return;
-            }
-        });
-    }
-    static saveCookies(cookies) {
-        this.cookies = cookies;
-        console.log("cookies: " + cookies);
-    }
     //-----------------------------------------------------------------
+    //--------------------- UPDATING FICTIONS -------------------------
     //-----------------------------------------------------------------
     static loadFictions() {
         return __awaiter(this, void 0, void 0, function* () {
             this.loadUpdateSettings();
             const fictions = yield this.loadFictions_request();
             this.updateFictions(fictions);
+            this.update();
             return "success";
         });
     }
     //----------------------------------------------
     //----------------------------------------------
-    //Bookmark a novel
     static loadFictions_request(session = this.session) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log("loading fics via request");
@@ -458,38 +424,8 @@ class RRL extends website {
             }
         });
     }
-    static _loadFictions() {
-        if (!this.loggedIn) {
-            console.log("not logged in");
-            return;
-        }
-        this.init();
-        this.getToken_win();
-        console.log('Loading Fictions via a browser window.');
-        this.window.loadURL(this.fictionsPage);
-        this.window.webContents.openDevTools();
-        this.window.webContents.once('dom-ready', () => {
-            console.log("Finding Fictions");
-            RRL.window.webContents.executeJavaScript(`     
-        const cheerio = require('cheerio');
-        var $ = cheerio.load(document.body.innerHTML);
-        var links = $('a');
-        var result = [];
-        var query = "/fiction/submission/edit?id=";
-        links.each(function(i,element){
-          //console.log("field "+element.attribs['name']+": "+element.attribs['value']);
-          if (element.attribs['href'] && element.attribs['href'].includes(query)){ 
-            console.log("fiction: "+element.attribs['href']);
-            result.push(element.attribs['href'].split('=')[1]);
-          }
-          });  
-        var result_string="order=updateFictions&fictions="+result.join(','); 
-        //alert("finding fictions: "+result_string)
-        require('electron').ipcRenderer.send('hasGottenFictions', result_string);
-        `);
-            return this.token;
-        });
-    }
+    //----------------------------------------------
+    //----------------------------------------------
     static updateFictions(fics) {
         console.log('updating fictions');
         //investigate(args); 
@@ -517,7 +453,20 @@ class RRL extends website {
         });
     }
     //-----------------------------------------------------------------
+    //----------------------- RELEASES --------------------------------
     //-----------------------------------------------------------------
+    static downloadScheduledReleases(novelID = 12147) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log("Calling downloadScheduledReleases for " + novelID);
+            const releases = yield this.downloadScheduledReleases_request(12147);
+            console.log("saving result: " + JSON.stringify(releases));
+            this.saveScheduledReleases(releases);
+            this.update();
+            return "success";
+        });
+    }
+    //----------------------------------------------
+    //----------------------------------------------
     //displayScheduledReleases
     static displayScheduledReleases() {
         this.loadUpdateSettings();
@@ -548,57 +497,28 @@ class RRL extends website {
         let form = `
       <form id="${formName}" onSubmit="JavaScript:sendForm(event, '${formName}')">
       <fieldset>
-      <legend> Scheduled Releases, ${RRL.siteName}</legend>
-      <ul>${schedule}</ul>
-      <input type=hidden name=order value="downloadScheduledReleases"/>
-      <input type=submit value="Download Releases"/>
+        <legend> Scheduled Releases, ${RRL.siteName}</legend>
+        <ul>${schedule}</ul>
+        <input type=hidden name=order value="downloadScheduledReleases"/>
+        <input type=submit value="Download Releases"/>
       </fieldset>
-    </form>
+      </form>
       `;
         return form;
     }
-    static saveScheduledReleases(chapters) {
-        console.log('updating releases: ' + JSON.stringify(chapters));
-        //investigate(args);
-        /*
-        const chapters = new Array(args['releases'])
-        //investigate(fics);
-        const fictionID=args['fictionID'];
-        this.releases[fictionID]={};
-        chapters.forEach(function(id){
-          console.log('adding chapter '+id);
-          RRL.releases[id]={};
-          RRL.releases[id]["ID"] = id;
-          RRL.releases[id]["title"] = chapters[id].title;
-          RRL.releases[id]["time"] = chapters[id].time;
-        })
-        console.log('converting into JSON: ');
-        investigate(RRL.fictions);
-  */
-        const settingsFile = RRL.siteName + "_releases.json";
-        var fs = require('fs');
-        var jsonString = JSON.stringify(RRL.releases);
-        console.log(jsonString);
-        fs.writeFile(settingsFile, jsonString, function (err) {
-            if (err)
-                return console.log(err);
-            console.log('writing to ' + settingsFile);
-        });
-    }
+    //----------------------------------------------
+    //----------------------------------------------
     static downloadScheduledReleases_request(novelID = 12147, session = this.session) {
         return __awaiter(this, void 0, void 0, function* () {
             this.loadUpdateSettings();
             console.log("downloading releases for " + novelID + " via request");
             console.log("username: " + this.username + " pw: " + this.password);
-            //investigate(RRL.session);
             session = this.session || (yield this.login_request());
-            //console.log('Cookie: '+session.cookie);
-            //console.log('Cookie2: '+this.session.cookie);
-            const address = 'https://deployment.royalroad.com/my/fiction/' + novelID;
             try {
                 const options = {
                     method: "GET",
-                    uri: address,
+                    baseUrl: this.fictionsPage,
+                    url: novelID,
                     qs: {
                         type: "follow",
                         mark: "True",
@@ -607,7 +527,7 @@ class RRL extends website {
                         cookie: session.cookie
                     }
                 };
-                console.log("loading site: " + address);
+                console.log("loading site: " + options.baseUrl + options.url);
                 const res = yield request(options);
                 var $ = cheerio.load(res);
                 console.log("loaded site: " + typeof res + "length: " + res.length);
@@ -637,18 +557,24 @@ class RRL extends website {
             }
         });
     }
-    static downloadScheduledReleases(novelID = 12147) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log("Calling downloadScheduledReleases for " + novelID);
-            const releases = yield this.downloadScheduledReleases_request(12147);
-            console.log("saving result: " + JSON.stringify(releases));
-            this.saveScheduledReleases(releases);
-            return "success";
+    //----------------------------------------------
+    //----------------------------------------------
+    static saveScheduledReleases(chapters) {
+        console.log('updating releases: ' + JSON.stringify(chapters));
+        //investigate(args);
+        const settingsFile = RRL.siteName + "_releases.json";
+        var fs = require('fs');
+        var jsonString = JSON.stringify(RRL.releases);
+        console.log(jsonString);
+        fs.writeFile(settingsFile, jsonString, function (err) {
+            if (err)
+                return console.log(err);
+            console.log('writing to ' + settingsFile);
         });
     }
     //-----------------------------------------------------------------
+    //------------------ UPDATE SETTINGS ------------------------------
     //-----------------------------------------------------------------
-    //loadUpdateSettings, gets settings for site updates
     static loadUpdateSettings() {
         console.log("Loading update settings");
         super.loadUpdateSettings();
@@ -656,7 +582,7 @@ class RRL extends website {
         this.baseURL = "https://deployment.royalroad.com";
         this.loggedIn = false;
         this.token = "";
-        this.actionPage = "https://deployment.royalroad.com/account/betalogin";
+        //this.actionPage = "https://deployment.royalroad.com/account/betalogin";
         //this.actionPage = "https://www.royalroad.com/account/externallogin?returnUrl=https%3A%2F%2Fwww.royalroad.com%2Fhome";
         //this.loginPage = "https://www.royalroad.com/account/login"; 
         this.siteName = "RRL";
@@ -689,7 +615,6 @@ class RRL extends website {
     }
     //-----------------------------------------------------------------
     //-----------------------------------------------------------------
-    //changeUpdateSettings, changes settings for site updates
     static changeUpdateSettings(fiction) {
         this.loadUpdateSettings();
         console.log("called changeUpdateSettings");
@@ -705,6 +630,7 @@ class RRL extends website {
             console.log("JSON: " + jsonString);
             console.log('writing to ' + settingsFile);
         });
+        this.update();
         return "success";
     }
     //-----------------------------------------------------------------
@@ -778,7 +704,8 @@ class RRL extends website {
         return form;
     }
     //------------------------------------------------------------------------------
-    //------------------------------------------------------------------------------    
+    //-------------------------- TEST CASES ----------------------------------------    
+    //------------------------------------------------------------------------------
     //displayTestButtons, some function testing stuff
     static displayTestButtons() {
         let formName = "test_" + this.siteName;
@@ -794,170 +721,39 @@ class RRL extends website {
           </form>
           `;
     }
-    //----------------------------------------------
-    //----------------------------------------------
-    //        ***  OBSOLETE FUNCTIONS  ***
-    //----------------------------------------------
-    //----------------------------------------------
-    static _downloadScheduledReleases_win(novelID = 12147) {
-    }
-    //Tell window to visit login page and get their token
-    static getToken_win() {
-        let error;
-        let response;
-        let html;
-        if (this.token.length > 2) {
-            console.log("already has token");
-            return this.token;
-        }
-        this.init();
-        this.loadUpdateSettings();
-        console.log(`getting tokens from ${this.baseURL}`);
-        this.window.loadURL(this.baseURL);
-        //const {ipcMain} = require('electron');
-        ipcMain.on('body', function (event, body) {
-            console.log("Receiving token: ");
-            //console.log(body)
-            console.log(RRL.getTokenFromHTML(body));
-            event.sender.send('hasToken', "test");
-        });
-        this.window.webContents.once('dom-ready', () => {
-            RRL.window.webContents.executeJavaScript(`
-              //var token = document.getElementById("__RequestVerificationToken");
-              //require('electron').ipcRenderer.send('body', token);
-              require('electron').ipcRenderer.send('hasToken', document.body.innerHTML);
-              `);
-            return this.token;
-        });
-        return "Error";
-    }
-    ;
-    static bookmark_win(fictionNr = 4293) {
-        //const fictionNr = 4293; //Iron Teeth
-        if (!this.loggedIn)
-            this.login_win();
-        console.log('bookmarking using a browser window.');
-        const dataString = `type=follow&mark=true}`;
-        console.log(`Datastring: '${dataString}'`);
-        this.window.loadURL(`${this.baseURL}/fictions/setbookmark/${fictionNr}`, {
-            postData: [{
-                    type: 'rawData',
-                    bytes: Buffer.from(dataString)
-                }],
-            extraHeaders: 'Content-Type: application/x-www-form-urlencoded'
-        });
-        this.window.webContents.once('dom-ready', () => {
-            console.log("Detecting bookmark");
-            RRL.window.webContents.executeJavaScript(`
-          require('electron').ipcRenderer.send('hasBookmarked', document.body.innerHTML);
-          `);
-            return this.token;
-        });
-        return "bookmarking";
-    }
     //-----------------------------------------------------------------
+    //--------------------- BOOKMARK ----------------------------------
     //-----------------------------------------------------------------
-    //Visit login page and get their token
-    static getToken() {
-        let error;
-        let response;
-        let html;
-        this.loadUpdateSettings();
-        console.log(`getting tokens from ${this.baseURL}`);
-        request(this.baseURL, function (error, response, html) {
-            if (!error && response.statusCode == 200) {
-                var $ = cheerio.load(html);
-                var input = $('input');
-                input.each(function (i, element) {
-                    console.log("field " + element.attribs['name'] + ": " + element.attribs['value']);
-                    if (element.attribs['name'] == "__RequestVerificationToken") {
-                        return element.attribs['value'];
+    static bookmark_request(fictionNr = 4293, session = this.session) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log("bookmarking via request");
+            //investigate(RRL.session);
+            session = this.session || (yield this.login_request());
+            //console.log('Cookie: '+session.cookie);
+            try {
+                const options = {
+                    method: "GET",
+                    baseUrl: this.baseURL,
+                    url: "/fictions/setbookmark/" + fictionNr,
+                    qs: {
+                        type: "follow",
+                        mark: "True",
+                    },
+                    headers: {
+                        cookie: session.cookie
                     }
-                });
+                };
+                console.log("loading site: " + options.url);
+                const res = yield request(options);
+                console.log("Successfully bookmarked.");
+                return session;
+            }
+            catch (err) {
+                console.log("Error in bookmark_request: " + err.message);
+                //console.log(JSON.stringify(err, null, 2));
+                return;
             }
         });
-        return "Error";
-    }
-    ;
-    //----------------------------------------------
-    //----------------------------------------------
-    //Get token from HTML and store it
-    static getTokenFromHTML(html) {
-        console.log("getTokenFromHTML");
-        var $ = cheerio.load(html);
-        var input = $('input');
-        var token = "";
-        input.each(function (i, element) {
-            //console.log("field "+element.attribs['name']+": "+element.attribs['value']);
-            if (element.attribs['name'] == "__RequestVerificationToken") {
-                console.log("token is: " + element.attribs['value']);
-                RRL.token = element.attribs['value'];
-                token = element.attribs['value'];
-            }
-        });
-        if (token.length > 1) {
-            //const {ipcMain} = require('electron');
-            //this.ipcMain.send('hasToken', "test");
-            this.window.webContents.send("hasToken");
-            return token;
-        }
-        return `did not find token (${token})`;
-    }
-    //-----------------------------------------------------------------
-    //-----------------------------------------------------------------
-    //Make a new window and use that to log in. Redundant. 
-    static login_win() {
-        /*
-        if (this.loggedIn) {console.log("already logged in"); return "error";}
-        this.init();
-        this.getToken_win();
-        console.log('Logging in using a browser window.');
-        const formData = {
-          //key-value pairs
-          Email: this.username,
-          Password: this.password,
-          Remember: "false",
-          __RequestVerificationToken: this.token
-          };
-          const dataString=`email=${formData.Email}&password=${formData.Password}&remember=${formData.Remember}&__RequestVerificationToken=${formData.__RequestVerificationToken}`
-        console.log(`Datastring: '${dataString}'`);
-        this.window.loadURL(`${this.actionPage}`, {
-      postData: [{
-        type: 'rawData',
-        bytes: Buffer.from(dataString)
-        }],
-      extraHeaders: 'Content-Type: application/x-www-form-urlencoded'
-      })
-  
-      ipcMain.once('hasCookies', (event, body) => {
-        const cookies = JSON.parse(body);
-        investigate(cookies);
-        RRL.cookies = cookies;
-        });
-  
-      this.window.webContents.once('dom-ready', () => {
-        console.log("Detecting login");
-        RRL.loggedIn=true;
-        const ses = session.fromPartition('persist:name');
-        console.log("Session info: "+ses.getUserAgent());
-        // Get all cookies
-        ses.cookies.get(
-          {},
-          (error, result) => console.log('Found the following cookies', result)
-          )
-        RRL.window.webContents.executeJavaScript(`
-          let cookies="";
-          for (const c in document.cookie){
-            
-          }
-          require('electron').ipcRenderer.send('hasCookies', document.cookie);
-          require('electron').ipcRenderer.send('hasLoggedIn', document.body.innerHTML);
-          `
-          );
-        return this.token;
-        });
-        */
-        return "success";
     }
 }
 RRL.siteName = "RRL";
