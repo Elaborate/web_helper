@@ -90,6 +90,26 @@ export class website {
 
     //Methods:
 
+    //-----------------------------------------------------------------
+    //------------------- UPDATE MAIN WINDOW --------------------------
+    //-----------------------------------------------------------------
+
+    static update(): void { //How much of this is even needed?
+      const path = require('path');
+      const url = require('url');
+      this.window.loadURL(url.format({
+          pathname: path.join(__dirname, 'index.html'),
+          protocol: 'file',
+          slashes: true
+      })
+      )
+    }
+
+    //-----------------------------------------------------------------
+    //------------------- DO SETUP STUFF ------------------------------
+    //-----------------------------------------------------------------
+
+
     //loadUpdateSettings, loads settings for when and what to update from file
     static loadUpdateSettings(): void{
       try{
@@ -101,6 +121,10 @@ export class website {
         this.password = ""; 
       }
     }
+
+
+    //----------------------------------------------
+    //----------------------------------------------
 
   //Initialize, sets up object
     static init(): void{
@@ -241,6 +265,7 @@ export class RRL extends website{
     static siteName = "RRL";
     static fictions: any; 
     static releases: any; 
+    static chapters: any;
     static chaptersPerUpdate: number; 
     static hourOfDayToUpdate: number;
     static weekdaysToUpdate: [];
@@ -259,29 +284,14 @@ export class RRL extends website{
     static token: any;
     static gettingToken: boolean;
     static loggedIn: boolean;
-    static loggingIn: boolean;
-    static bookmarked: boolean;
-    static bookmarking: boolean;
+    static settingsLoaded=false;
     static ipcMain: any;
     
     static init(): void{
       super.init();
     }
 
-    //-----------------------------------------------------------------
-    //------------------- UPDATE MAIN WINDOW --------------------------
-    //-----------------------------------------------------------------
 
-    static update(): void { //How much of this is even needed?
-      const path = require('path');
-      const url = require('url');
-      this.window.loadURL(url.format({
-          pathname: path.join(__dirname, 'index.html'),
-          protocol: 'file',
-          slashes: true
-      })
-      )
-    }
 
     //-----------------------------------------------------------------
     //---------------------- LOG IN -----------------------------------
@@ -427,8 +437,76 @@ export class RRL extends website{
         return;
       }
     }
+    //-----------------------------------------------------------------
+    //--------------------- CHAPTERS ----------------------------------
+    //-----------------------------------------------------------------
 
+    static displayChapters(): string{
+      console.log(`displayChapters()`)
+      this.updateChapters();
+      const chapters = this.chapters; 
+      if (typeof chapters == 'undefined') return "Bad Folder Address"
+      let ret =""
+      chapters.forEach(function(c){
+        ret+=`<li>${c}</li>`
+      })
+      return `
+      <ul>
+      ${ret}
+      </ul>
+      `
+    }
 
+    static async updateChapters(): Promise<string>{
+      console.log(`updateChapters()`)
+      console.log(`Folder: '${this.fictions.folder}'`)
+      this.chapters = await this.listChapters(); 
+      return this.chapters;
+    }
+
+    static async readDirectory(dirName):Promise<any[]>{
+      const fs=require('fs');
+      return new Promise(function (resolve, reject) {
+        fs.readdir(dirName, function (err, result) {
+            if (err)
+                reject(err);
+            else
+                resolve(result);
+        });
+      });
+    }
+
+    static async listChapters(dirName=false): Promise<any[]> {
+      await this.loadUpdateSettings();
+      //if (!dirName && this.fictions && this.fictions.folder) dirName=this.fictions.folder; 
+      console.log(`listChapters(${dirName})`)      
+      const fs=require('fs');
+      //investigate(this.fictions);
+      let ret = [];
+      await Object.keys(RRL.fictions).forEach(async function(novelID){
+        const dirName = RRL.fictions[novelID].folder
+        let res;
+        try { res = await RRL.readDirectory(dirName) } 
+        catch (e) { console.log('error: ', e.message); }
+        console.log(`found chapters: ${JSON.stringify(res)}`)
+        ret = ret.concat(res);
+        investigate(ret);
+      });
+      console.log(`final result: ${JSON.stringify(ret)}`)
+      investigate(ret);
+      return ret;
+    }
+
+    static readChapter(path=""){
+      const fs=require('fs');
+      try{      fs.readFile(path, 'utf-8', function(err, content) {
+        if (err) {
+          console.log(`readChapter(${path}) encountered error: ${err.message}`)  
+          return;
+        }
+
+    })} catch{}
+  }
     //-----------------------------------------------------------------
     //--------------------- UPDATING FICTIONS -------------------------
     //-----------------------------------------------------------------
@@ -648,40 +726,37 @@ export class RRL extends website{
     //-----------------------------------------------------------------
 
 
-    static loadUpdateSettings(): void{
+    static loadUpdateSettings(sudo=false): void{ 
+      if (!sudo && this.settingsLoaded ) return; 
+      this.settingsLoaded=true;
       console.log("Loading update settings");
-        super.loadUpdateSettings();
-        this.chaptersPerUpdate=7; 
-        this.baseURL = "https://deployment.royalroad.com";
-        this.loggedIn = false; 
-        this.token = "";
-        //this.actionPage = "https://deployment.royalroad.com/account/betalogin";
-        //this.actionPage = "https://www.royalroad.com/account/externallogin?returnUrl=https%3A%2F%2Fwww.royalroad.com%2Fhome";
-        //this.loginPage = "https://www.royalroad.com/account/login"; 
-        this.siteName = "RRL"; 
-        this.gettingToken=false;
-        this.loggingIn=false;
-        this.bookmarked=false;
-        this.bookmarking=false;
-        const {ipcMain} = require('electron'); 
-        this.ipcMain = ipcMain;
-        try{ this.fictions = require('./'+RRL.siteName+'.json'); }
-        catch{ 
-          console.log("can't find RRL file");
-          this.fictions = {}; 
-          }
-        try{ this.releases = require('./'+RRL.siteName+'_releases.json'); }
-        catch{ 
-          console.log("can't find RRL schedule file");
-          this.releases = {}; 
-          }
-        try{
-          console.log(investigate(this.fictions));
+      super.loadUpdateSettings();
+      this.chaptersPerUpdate=7; 
+      this.baseURL = "https://deployment.royalroad.com";
+      this.loggedIn = false; 
+      this.token = "";
+      //this.actionPage = "https://deployment.royalroad.com/account/betalogin";
+      //this.actionPage = "https://www.royalroad.com/account/externallogin?returnUrl=https%3A%2F%2Fwww.royalroad.com%2Fhome";
+      //this.loginPage = "https://www.royalroad.com/account/login"; 
+      this.siteName = "RRL"; 
+      const {ipcMain} = require('electron'); 
+      this.ipcMain = ipcMain;
+      try{ this.fictions = require('./'+RRL.siteName+'.json'); }
+      catch{ 
+        console.log("can't find RRL file");
+        this.fictions = {}; 
         }
-        catch{
-          console.log("can't investigate 'fictions'");
-        } 
-        
+      try{ this.releases = require('./'+RRL.siteName+'_releases.json'); }
+      catch{ 
+        console.log("can't find RRL schedule file");
+        this.releases = {}; 
+        }
+      try{
+        console.log(investigate(this.fictions));
+      }
+      catch{
+        console.log("can't investigate 'fictions'");
+      }   
     }
 
     //-----------------------------------------------------------------
@@ -712,7 +787,7 @@ export class RRL extends website{
       static displayUpdateSettings(): string{
         console.log("displaying update settings"); 
         this.loadUpdateSettings();
-        console.log("fictions: "+investigate(this.fictions)); 
+        //console.log("fictions: "+investigate(this.fictions)); 
         console.log("# of fictions: "+Object.keys(this.fictions).length); 
         let title_choices="";
         if (Object.keys(this.fictions).length>1){

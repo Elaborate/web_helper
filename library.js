@@ -81,6 +81,21 @@ class website {
     static test3() { return "This is from the original Class...<br/>\n"; }
     static test4() { return this.test3(); }
     //Methods:
+    //-----------------------------------------------------------------
+    //------------------- UPDATE MAIN WINDOW --------------------------
+    //-----------------------------------------------------------------
+    static update() {
+        const path = require('path');
+        const url = require('url');
+        this.window.loadURL(url.format({
+            pathname: path.join(__dirname, 'index.html'),
+            protocol: 'file',
+            slashes: true
+        }));
+    }
+    //-----------------------------------------------------------------
+    //------------------- DO SETUP STUFF ------------------------------
+    //-----------------------------------------------------------------
     //loadUpdateSettings, loads settings for when and what to update from file
     static loadUpdateSettings() {
         try {
@@ -92,6 +107,8 @@ class website {
             this.password = "";
         }
     }
+    //----------------------------------------------
+    //----------------------------------------------
     //Initialize, sets up object
     static init() {
         console.error('Init():');
@@ -231,18 +248,6 @@ class RRL extends website {
         super.init();
     }
     //-----------------------------------------------------------------
-    //------------------- UPDATE MAIN WINDOW --------------------------
-    //-----------------------------------------------------------------
-    static update() {
-        const path = require('path');
-        const url = require('url');
-        this.window.loadURL(url.format({
-            pathname: path.join(__dirname, 'index.html'),
-            protocol: 'file',
-            slashes: true
-        }));
-    }
-    //-----------------------------------------------------------------
     //---------------------- LOG IN -----------------------------------
     //-----------------------------------------------------------------
     static login_request() {
@@ -367,6 +372,94 @@ class RRL extends website {
                 return;
             }
         });
+    }
+    //-----------------------------------------------------------------
+    //--------------------- CHAPTERS ----------------------------------
+    //-----------------------------------------------------------------
+    static displayChapters() {
+        console.log(`displayChapters()`);
+        this.updateChapters();
+        const chapters = this.chapters;
+        if (typeof chapters == 'undefined')
+            return "Bad Folder Address";
+        let ret = "";
+        chapters.forEach(function (c) {
+            ret += `<li>${c}</li>`;
+        });
+        return `
+      <ul>
+      ${ret}
+      </ul>
+      `;
+    }
+    static updateChapters() {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log(`updateChapters()`);
+            console.log(`Folder: '${this.fictions.folder}'`);
+            this.chapters = yield this.listChapters();
+            return this.chapters;
+        });
+    }
+    static readDirectory(dirName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const fs = require('fs');
+            return new Promise(function (resolve, reject) {
+                fs.readdir(dirName, function (err, result) {
+                    if (err)
+                        reject(err);
+                    else
+                        resolve(result);
+                });
+            });
+        });
+    }
+    static listChapters(dirName = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.loadUpdateSettings();
+            //if (!dirName && this.fictions && this.fictions.folder) dirName=this.fictions.folder; 
+            console.log(`listChapters(${dirName})`);
+            const fs = require('fs');
+            //investigate(this.fictions);
+            let ret = [];
+            yield Object.keys(RRL.fictions).forEach(function (novelID) {
+                return __awaiter(this, void 0, void 0, function* () {
+                    const dirName = RRL.fictions[novelID].folder;
+                    let res;
+                    try {
+                        res = yield RRL.readDirectory(dirName);
+                    }
+                    catch (e) {
+                        console.log('error: ', e.message);
+                    }
+                    /*
+                    console.log(`Folder for novel ${novelID} is ${dirName}`)
+                    const res = await fs.readdir(dirName, function(err, filenames){
+                      if (err) {
+                        console.log(`listChapters(${dirName}) encountered error: ${err.message}`)
+                        return ["Bad Folder: " + dirName];
+                      }
+                    });*/
+                    console.log(`found chapters: ${JSON.stringify(res)}`);
+                    ret = ret.concat(res);
+                    investigate(ret);
+                });
+            });
+            console.log(`final result: ${JSON.stringify(ret)}`);
+            investigate(ret);
+            return ret;
+        });
+    }
+    static readChapter(path = "") {
+        const fs = require('fs');
+        try {
+            fs.readFile(path, 'utf-8', function (err, content) {
+                if (err) {
+                    console.log(`readChapter(${path}) encountered error: ${err.message}`);
+                    return;
+                }
+            });
+        }
+        catch (_a) { }
     }
     //-----------------------------------------------------------------
     //--------------------- UPDATING FICTIONS -------------------------
@@ -575,7 +668,10 @@ class RRL extends website {
     //-----------------------------------------------------------------
     //------------------ UPDATE SETTINGS ------------------------------
     //-----------------------------------------------------------------
-    static loadUpdateSettings() {
+    static loadUpdateSettings(sudo = false) {
+        if (!sudo && this.settingsLoaded)
+            return;
+        this.settingsLoaded = true;
         console.log("Loading update settings");
         super.loadUpdateSettings();
         this.chaptersPerUpdate = 7;
@@ -586,10 +682,6 @@ class RRL extends website {
         //this.actionPage = "https://www.royalroad.com/account/externallogin?returnUrl=https%3A%2F%2Fwww.royalroad.com%2Fhome";
         //this.loginPage = "https://www.royalroad.com/account/login"; 
         this.siteName = "RRL";
-        this.gettingToken = false;
-        this.loggingIn = false;
-        this.bookmarked = false;
-        this.bookmarking = false;
         const { ipcMain } = require('electron');
         this.ipcMain = ipcMain;
         try {
@@ -639,7 +731,7 @@ class RRL extends website {
     static displayUpdateSettings() {
         console.log("displaying update settings");
         this.loadUpdateSettings();
-        console.log("fictions: " + investigate(this.fictions));
+        //console.log("fictions: "+investigate(this.fictions)); 
         console.log("# of fictions: " + Object.keys(this.fictions).length);
         let title_choices = "";
         if (Object.keys(this.fictions).length > 1) {
@@ -760,6 +852,7 @@ RRL.siteName = "RRL";
 RRL.baseURL = "https://deployment.royalroad.com";
 RRL.actionPage = "https://deployment.royalroad.com/account/betalogin";
 RRL.fictionsPage = "https://deployment.royalroad.com/my/fictions";
+RRL.settingsLoaded = false;
 exports.RRL = RRL;
 //Outside the RRL class
 //const {ipcMain} = require('electron');

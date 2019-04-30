@@ -8,12 +8,22 @@
     <body>
         Chapter Coordinator Settings:
         <table>
-
+            <tr>
+                <td>
+                    <div id="releases"></div>
+                    <div id="chapters"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div id="RRL_account"></div>   
+                    <div id="update_settings"></div>         
+                    <div id="test_buttons"></div>         
+                </td>
+            </tr>
         </table>
-        <div id="test1"></div>
-        <div id="test2"></div>
-        <div id="test3"></div>
-        <div id="test4"></div>
+        
+        
     </body>
     <script type="text/javascript" src="./renderer.js"></script>
     <script type="module">
@@ -23,10 +33,11 @@
     const RRL = require('./library.js');
         RRL.loadUpdateSettings();
         //$('test').innerHTML = RRL.loginPage; 
-        $('test1').innerHTML = RRL.displayAccountForm(); 
-        $('test2').innerHTML = RRL.displayUpdateSettings();
-        $('test3').innerHTML = RRL.displayTestButtons(); 
-        $('test4').innerHTML = RRL.displayScheduledReleases(); 
+        $('RRL_account').innerHTML = RRL.displayAccountForm(); 
+        $('update_settings').innerHTML = RRL.displayUpdateSettings();
+        $('test_buttons').innerHTML = RRL.displayTestButtons(); 
+        $('releases').innerHTML = RRL.displayScheduledReleases(); 
+        $('chapters').innerHTML = RRL.displayChapters(); 
         //$('test4').innerHTML = RRL.bookmark();
     
     </script>
