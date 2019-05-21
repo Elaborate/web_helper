@@ -1,0 +1,13 @@
+{
+  "fictions": {
+    "12147": {
+      "number": "1",
+      "weekday": "monday",
+      "time": "00:00",
+      "pattern": "Lorem Ipsum",
+      "folder": "/Users/Rolf/Dropbox/test",
+      "title": "lorem Ipsum",
+      "ID": "12147"
+    }
+  }
+}
