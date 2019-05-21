@@ -4,3 +4,4 @@ RRL.json
 *.json
 !package.json
 !package-lock.json
+!tsconfig.json
