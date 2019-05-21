@@ -1,5 +1,6 @@
 node_modules/*
 accounts.json
+RRL_account.json
 RRL.json
 *.json
 !package.json
