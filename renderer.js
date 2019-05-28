@@ -18,6 +18,36 @@ catch(err) {
 //const {RRL,form} = require('./forms_non-static.js');
 //const ipcMain = require('electron').remote;
 
+//--------------------------------------------------------------
+//--------------------------------------------------------------
+//Debugging function
+function investigate(obj, space=0, path=obj, parent=null, grandparent=null){
+    let main=(ipcRenderer===undefined)
+      if (main) console.log(`Investigating ${path}`); 
+      else console.log(`%cInvestigating ${path}`,"color: #773"); 
+      if (obj)
+      Object.keys(obj).forEach(function(k, i) {
+        try{
+        const type = typeof obj[k]; 
+        const recursive = (k=="parent" || k=="next" || k=="prev" || obj[k]==obj || obj[k]==parent || obj[k]==grandparent) 
+        if (!recursive && space<5 && (type == 'object')) investigate(obj[k], space+1,path+'/'+k, obj, parent);
+        else 
+        
+        if (type == 'function') 
+        {
+          if (main) console.log(`${'  '.repeat(space)} ${k}(${type})`);
+          else console.log(`%c${'  '.repeat(space)} ${k}(${type})`,"color: #773");
+      }
+        else {
+          if (main) console.log(`${'  '.repeat(space)} ${k}(${type}): ${obj[k]}`);
+          else console.log(`%c${'  '.repeat(space)} ${k}(${type}): ${obj[k]}`,"color: #773");
+        }
+        }
+        catch{console.log(k+" not viewable");}
+        });
+      }
+
+      
 
 //-------------------------------------------------------------------
 //Found this on stackoverflow, by TibTibs
@@ -49,24 +79,64 @@ function serialize(form){
 //-------------------------------------------------------------------
 //This function is used in forms with two or more submit buttons, 
 //to change the value of the hidden "order" input before serialize() activates. 
-//There's probably s a better way of doing this. 
+//There's probably a better way of doing this stuff. 
 //It annoys me that I have to add an "onclick:changeOrder(this)" to each such button. 
-function changeOrder(el){
+function changeOrder(el, ord=""){
     //investigate(el);
-    const name = el.name || el.id || el.type || "undefined"
-    const order = el.order || el.value; 
-    console.log("changeOrder() called by node: '"+el.name+"' with new order: "+order);
-    node = el.parentNode.firstChild;
-    while (node && !!node){
-        //console.log("searching node: '"+node.name+"'");
-        if (node.name=="order") {
+    let nodeName = el.name || el.id || el.type || "undefined";
+    const order = ord || el.order || el.value; 
+    console.log("changeOrder() called by node: '"+nodeName+"' with new order: "+order);
+    const form = findTheForm(el);
+    for(i=form.elements.length-1; i>=0; i--){
+        const node = form.elements[i];
+        nodeName = node.name || node.id || node.type || "undefined";
+        console.log("searching node: '"+nodeName+"'");
+        if (nodeName=="order") {
+            console.log("node: '"+nodeName+"' matches 'order', setting it to :"+order);
             node.setAttribute("value", order);
             return;
             }
-        node = node.nextElementSibling || node.nextSibling;
         }
     }
 
+//Goes up through the DOM tree until it hits a form element. 
+function findTheForm(el){
+    if(!el){console.log("error: findTheForm('"+el+"')!"); return;}
+    let name;
+    while(el=el.parentNode){
+        name = el.nodeName || el.tagName || el.name || el.type || "cannot find node name";
+        console.log("looking at '"+ name + "'");
+        if (name=="FORM" || name=='form') return el;         
+        }
+    console.log("could not find form!"); 
+    return;
+    }
+
+//Version to change a value in a named form element. 
+//I really need to find a better way to do this. 
+function changeValue(el, name, val=0){
+    let nodeName = el.name || el.id || el.type || "undefined node"
+    const value = val || el.value; 
+    console.log("changeValue() called by node: '"+nodeName+"' wanting to change '"+name+"' to new value: '"+value+"'");
+    //console.log(el);
+    //investigate(el);
+    const form = findTheForm(el);
+    for(i=form.elements.length-1; i>=0; i--){
+        node = form.elements[i];
+        nodeName = node.name || node.id || node.type || "undefined";
+        console.log("searching node: '"+nodeName+"'");
+        if (node.name==name) {
+            console.log("node: '"+nodeName+"' matches '"+name+"', setting it to :"+value);
+            node.setAttribute("value", value);
+            return;
+            }
+        else{
+            console.log("node: '"+nodeName+"' is not a match for '"+name+"'");}
+            }
+    let nextName = "undefined node"
+    if (node) nextName=node.name || node.id || "undefined name"; 
+    console.log("Exiting changeValue() at node:'"+nextName+"'without finding target node.")
+    }
 
 
 //-------------------------------------------------------------------

@@ -181,6 +181,13 @@ export class form {
       //PLACEHOLDER 
     }
 
+      //-----------------------------------------------------
+  //-----------------------------------------------------
+  //Do something. 
+  action(): void {
+    //PLACEHOLDER 
+    console.log("called action()")
+  }
   //-----------------------------------------------------
   //-----------------------------------------------------
   //Update form in BrowserWindow with generated innerHTML

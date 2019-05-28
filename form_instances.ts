@@ -96,17 +96,25 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
   localChapters.website=RRL
   localChapters.mainHTML=function(): string{
     console.log(`mainHTML()`)
-    this.loadData();
+    //this.loadData();
     console.log("Looking at chapters: ",JSON.stringify(this.chapters));
     const chapters = this.parameters.chapters; 
+    const fictions = form["RRL_UpdateSettings"].parameters.fictions;
     if (typeof chapters == 'undefined') return "Bad Folder Address"
 
     //Return unordered list of chapters
     let ret =""
-    chapters.forEach(function(c){ ret+=`<li>${c}</li>` });
+    Object.keys(chapters).forEach(function(chap){ 
+      const chapter = chapters[chap];
+      const fictionID = chapter.fictionID || undefined; 
+      const pattern = fictions[fictionID.pattern];
+      const path = chapter.filepath || 'unknown';
+      const name = chapter.filename;
+      ret+=`<li>${name}<button id='${path}' onclick="changeValue(this, 'chapterPath', '${path}'); changeOrder(this,'release');">schedule</button></li>` });
     return `<ul>\n${ret}\n</ul>
-    <input type=hidden name=order value="loadData"/>
-    <input type=submit value="Refresh local file list"/>
+    <input type=hidden name=order value="release"/>
+    <input type=hidden name=chapterPath value="0"/>
+    <input type=submit value="Refresh local file list" onclick="changeOrder(this,'loadData');"/>
     `}
 
   //------------------------------------------------------------------------------
@@ -123,7 +131,7 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
       return;}
     //For every fiction, load chapters recognized by pattern into local memory.
     const fs=require('fs');      
-    let ret = [];
+    let ret = {};
     Object.keys(fictions).forEach(function(novelID){
       const dirName = fictions[novelID].folder
       if (dirName===undefined) return;
@@ -132,14 +140,90 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
       try { res = fs.readdirSync(dirName); }
       catch (e) { console.log('error: ', e.message); }
       console.log(`found chapters: ${JSON.stringify(res)}`)
-      ret = ret.concat(res);
-      this_form.parameters.chapters=res;
+      for (const chap in res){
+        const chapter = res[chap];
+        ret[chapter]={}
+        ret[chapter]["fictionID"] = novelID;
+        ret[chapter]["filename"] = chapter;
+        ret[chapter]["filepath"] = dirName+"/"+chapter;
+      }
       //investigate(ret);
     });
+    this_form.parameters.chapters=ret;
     console.log(`final result: ${JSON.stringify(ret)}`)
     investigate(ret); 
     this.saveSettingsToFile();
     return ret;
+  }
+
+  localChapters.release=function(args){
+    console.log(`${this.formName} called loadData()`);
+    this.action(args.chapterPath)
+  } 
+
+  localChapters.action=function(chapterPath="", status="New"){
+    console.log(`%c${this.formName} called action('${chapterPath}')`, "color: blue;");
+    if (!chapterPath){alert("invalid filepath: "+chapterPath); return;}
+    let chapter;
+    for (const c in this.parameters.chapters){
+      const chap = this.parameters.chapters[c];
+      investigate(chap);
+      if (chap["filepath"]==chapterPath) {
+        chapter=chap;
+        break; 
+        }
+      else{
+        console.log(`No match! Compared:\n${chapterPath}\n${chap["filepath"]}`)
+      }}
+    if (!chapter){
+      console.log("could not find chapter with filepath: '"+chapterPath+"'")
+      investigate(this.parameters.chapters)
+    }
+    console.log("chapter found: ");
+    investigate(chapter);
+    //const chapter=this.parameters.chapters[ChapterName]; //FIX
+
+    //Preparing submission parameters
+    const fictionID=chapter.fictionID;
+    const fiction=form["RRL_UpdateSettings"].parameters.fictions[fictionID];
+    const pre = chapter.pre || fiction.pre || "";
+    const post = chapter.post || fiction.post || "";
+    const date = chapter.date;
+    const timezone = "-120" //FIX 
+    const token = RRL.token; 
+    const address = "https://deployment.royalroad.com/fiction/chapter/new/"+fictionID;
+    const fs=require('fs');      
+    console.log("yo");
+
+    //Reading in chapter text
+    fs.readFile(chapterPath, 'utf8', function (err, chapterText) {
+    if (err) return console.log(err);    
+    if (!chapterText) {alert("Could not find file: "+chapterPath); return;}
+    if (chapterText.length<500) {alert("Must be at least 500 characters: "+chapterPath); return;}
+    
+    const qs={
+      Status: status, 
+      fid: fictionID,
+      Title: chapter.fiction, 
+      PreAuthorNotes: pre,
+      Content: chapterText,
+      PostAuthorNotes: post, 
+      ScheduledRelease: date,
+      hasPoll: false, 
+      timezone: timezone,
+      __RequestVerificationToken: token,
+      action: "publish"
+      }
+    investigate(qs);
+    });
+    
+    console.log("ho");
+    
+    /*
+    RRL.load(address,qs).then(function(){
+      console.log("draft scheduled")
+      
+    });*/
   }
 
   //--------------------------------------------------------------
@@ -239,13 +323,24 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
   const tests = new form("test_buttons"); 
   tests.legend="Update Settings";
   tests.website=RRL;
-  
+  tests.compose=function(){
+    return tests.mainHTML();
+    }
   tests.mainHTML=function(): string {
     console.log(`Called tests.mainHTML()`);
     return `
+    <form>
     <input type=hidden name=FictionNr value="4293"/>
     <input type=hidden name=order value="bookmark"/>
     <input type=submit value="bookmark Iron Teeth"/>
+    </form>
+    <button onclick="form.updateAll();">reload page</button>
+    <button onclick="console.log(form); investigate(form)">investigate form</button>
+    <button onclick="console.log('Forms: '+form.forms);">check form keys</button>
+    <button onclick="form['test_buttons'].bookmark()">bookmark test</button>
+    <button onclick="form=require('./form_instances.js');">reset form</button>
+    <button onclick="var test_variable='test'">make a test var</button>
+    <button onclick="console.log(test_variable);">log test var</button>
     `}
 
   //Bookmarks fiction, defaults to "Goblin Teeth"
@@ -261,6 +356,9 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
         console.log("Successfully bookmarked.");  
         });
     }
+
+
+
 
   //--------------------------------------------------------------
   //------------------       RRL UPDATE SETTINGS FORM       ------

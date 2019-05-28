@@ -152,6 +152,13 @@ class form {
     }
     //-----------------------------------------------------
     //-----------------------------------------------------
+    //Do something. 
+    action() {
+        //PLACEHOLDER 
+        console.log("called action()");
+    }
+    //-----------------------------------------------------
+    //-----------------------------------------------------
     //Update form in BrowserWindow with generated innerHTML
     display() {
         console.log("Called display() on " + this.formName);
