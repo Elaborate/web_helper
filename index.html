@@ -28,21 +28,12 @@
     </body>
     <script type="text/javascript" src="./renderer.js"></script>
     <script type="module">
-    function $(id){return document.getElementById(id);}
-    
-    require('./renderer.js');
-    const RRL = require('./website.js');
-    const form = require('./form_instances.js');
-        RRL.loadUpdateSettings();
-        //$('test').innerHTML = RRL.loginPage; 
-    var test_variable = "yo";     
-        //$('RRL_account').innerHTML = RRL.displayAccountForm(); 
-        //$('update_settings').innerHTML = RRL.displayUpdateSettings();
-        //$('test_buttons').innerHTML = RRL.displayTestButtons(); 
-        //$('releases_container').innerHTML = RRL.displayScheduledReleases(); 
-        //$('chapters_container').innerHTML = RRL.displayChapters(); 
-        form.updateAll();
-        //$('test4').innerHTML = RRL.bookmark();
-    
+        //function $(id){return document.getElementById(id);} 
+        require('./renderer.js');
+        window.RRL = require('./website.js');
+        window.form = require('./form_instances.js');
+        window.RRL.loadUpdateSettings();
+        var test_variable = "yo";     
+        window.form.updateAll();  
     </script>
 </html>

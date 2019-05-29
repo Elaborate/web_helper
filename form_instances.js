@@ -334,11 +334,11 @@ tests.mainHTML = function () {
     <input type=hidden name=order value="bookmark"/>
     <input type=submit value="bookmark Iron Teeth"/>
     </form>
+    <button onclick="window.form.updateAll();">reload page</button>
     <button onclick="console.log(form); investigate(form)">investigate form</button>
     <button onclick="console.log('Forms: '+form.forms);">check form keys</button>
-    <button onclick="form['test_buttons'].bookmark()">bookmark test</button>
-    <button onclick="form=require('./form_instances.js');">reset form</button>
-    <button onclick="form.updateAll();">reload page</button>
+    <button onclick="window.form['test_buttons'].bookmark()">bookmark test</button>
+    <button onclick="window.form=require('./form_instances.js');">reset form</button>
     <button onclick="var test_variable='test'">make a test var</button>
     <button onclick="console.log(test_variable);">log test var</button>
     `;
