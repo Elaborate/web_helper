@@ -183,7 +183,7 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
     let chapter;
     for (const c in this.parameters.chapters){
       const chap = this.parameters.chapters[c];
-      investigate(chap);
+      //investigate(chap);
       if (chap["filepath"]==chapterPath) {
         chapter=chap;
         break; 
@@ -195,8 +195,8 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
       console.log("could not find chapter with filepath: '"+chapterPath+"'")
       investigate(this.parameters.chapters)
     }
-    console.log("chapter found: ");
-    investigate(chapter);
+    //console.log("chapter found: ");
+    //investigate(chapter);
     //const chapter=this.parameters.chapters[ChapterName]; //FIX
 
     //Preparing submission parameters
