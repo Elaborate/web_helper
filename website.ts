@@ -171,12 +171,24 @@ export class website {
         options.form["__RequestVerificationToken:"] = token; 
         console.log("sending POST request, options: ");
         investigate(options);
-        console.log("\n");
+        console.log("sending POST request, options: ");
       }
       //send a request to provided address. 
+      return request(options).catch(function(err){
+        //Remove clutter from RRL error message
+        let txt = err.message;
+        txt = txt.split("col-md-12")[1]; //unique class before error message
+        txt = txt.split("Return home")[0]; //link text used after error message
+        txt = txt.replace(/<\/?p>..../g, "\n");
+        txt = txt.replace(/\\r\\n/g, "\n");
+        console.log("Error in load request: "+txt); 
+        return;
+      }); 
+      /*
       try { return request(options); } 
       catch (err) { console.log("Error in load request: "+err.message); }
-      return;
+      return;*/
+
       }
     //-----------------------------------------------------------------
     //--------------------- SAVE TO SETTINGS --------------------------
