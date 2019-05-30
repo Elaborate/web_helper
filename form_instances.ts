@@ -158,6 +158,20 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
     return ret;
   }
 
+  //Adds a fictitious chapter and submits it as a draft. 
+  localChapters.testSubmit=function(){
+    console.log("called testSubmit"); 
+    const chapterPath="test"
+    let fiction={};
+    fiction["fictionID"] = 12147;
+    fiction["filename"] = "test";
+    fiction["filepath"] = "test";
+    fiction["title"] = "Lorem Ipsum Ch.5";
+    this.parameters.chapters[chapterPath]=fiction;
+    this.action(chapterPath);
+    //this.parameters.chapters[chapterPath]=null;
+  }
+
   localChapters.release=function(args){
     console.log(`${this.formName} called loadData()`);
     this.action(args.chapterPath)
@@ -200,6 +214,7 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
     let qs={};
 
     //Reading in chapter text
+    /*
     fs.readFile(chapterPath, 'utf8', function (err, chapterText) {
       if (err) return console.log(err);    
       if (!chapterText) {alert("Could not find file: "+chapterPath); return;}
@@ -225,7 +240,26 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
         qs["PollOptions[1].votes"] = 0;
       investigate(qs);
       });
-    
+      */
+      qs={
+        Status: status, 
+        fid: fictionID,
+        Title: title, 
+        PreAuthorNotes: pre,
+        Content: testText,//chapterText,
+        PostAuthorNotes: post, 
+        ScheduledRelease: formattedDate,
+        timezone: timezone,
+        PollQuestion: "",
+        PollMultiple: 1, 
+        action: "draft"
+        }
+        //Poll option parameters. Is this necessary? 
+        qs["PollOptions[0].options"] = ""
+        qs["PollOptions[0].votes"] = 0;
+        qs["PollOptions[1].options"] = ""
+        qs["PollOptions[1].votes"] = 0;
+      investigate(qs);
     RRL.load(address,qs,"POST").then(function(){
       console.log("draft scheduled")
       
@@ -341,6 +375,7 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
       <input type=submit value="bookmark Iron Teeth"/>
     </form>
     <div>
+      <button onclick="window.form['RRL_LocalChapters'].testSubmit();">Submit test draft</button>
       <button onclick="window.form.updateAll();">reload page</button>
       <button onclick="console.log(window.form); investigate(form)">investigate form</button>
       <button onclick="console.log('Forms: '+window.form.forms);">check form keys</button>
@@ -363,6 +398,8 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
         }
     RRL.load(address, qs).then(function(){
         console.log("Successfully bookmarked.");  
+        }).catch(function(err){
+          console.log(err.message);
         });
         
     }

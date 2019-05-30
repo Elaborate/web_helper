@@ -157,6 +157,19 @@ localChapters.loadData = function () {
     this.saveSettingsToFile();
     return ret;
 };
+//Adds a fictitious chapter and submits it as a draft. 
+localChapters.testSubmit = function () {
+    console.log("called testSubmit");
+    const chapterPath = "test";
+    let fiction = {};
+    fiction["fictionID"] = 12147;
+    fiction["filename"] = "test";
+    fiction["filepath"] = "test";
+    fiction["title"] = "Lorem Ipsum Ch.5";
+    this.parameters.chapters[chapterPath] = fiction;
+    this.action(chapterPath);
+    //this.parameters.chapters[chapterPath]=null;
+};
 localChapters.release = function (args) {
     console.log(`${this.formName} called loadData()`);
     this.action(args.chapterPath);
@@ -200,37 +213,52 @@ localChapters.action = function (chapterPath = "", status = "New") {
     const fs = require('fs');
     let qs = {};
     //Reading in chapter text
+    /*
     fs.readFile(chapterPath, 'utf8', function (err, chapterText) {
-        if (err)
-            return console.log(err);
-        if (!chapterText) {
-            alert("Could not find file: " + chapterPath);
-            return;
+      if (err) return console.log(err);
+      if (!chapterText) {alert("Could not find file: "+chapterPath); return;}
+      if (chapterText.length<500) {alert("Must be at least 500 characters: "+chapterPath); return;}
+      
+      qs={
+        Status: status,
+        fid: fictionID,
+        Title: title,
+        PreAuthorNotes: pre,
+        Content: testText,//chapterText,
+        PostAuthorNotes: post,
+        ScheduledRelease: formattedDate,
+        timezone: timezone,
+        PollQuestion: "",
+        PollMultiple: 1,
+        action: "draft"
         }
-        if (chapterText.length < 500) {
-            alert("Must be at least 500 characters: " + chapterPath);
-            return;
-        }
-        qs = {
-            Status: status,
-            fid: fictionID,
-            Title: title,
-            PreAuthorNotes: pre,
-            Content: testText,
-            PostAuthorNotes: post,
-            ScheduledRelease: formattedDate,
-            timezone: timezone,
-            PollQuestion: "",
-            PollMultiple: 1,
-            action: "draft"
-        };
-        //Poll option parameters. Is this necessary? 
-        qs["PollOptions[0].options"] = "";
+        //Poll option parameters. Is this necessary?
+        qs["PollOptions[0].options"] = ""
         qs["PollOptions[0].votes"] = 0;
-        qs["PollOptions[1].options"] = "";
+        qs["PollOptions[1].options"] = ""
         qs["PollOptions[1].votes"] = 0;
-        investigate(qs);
-    });
+      investigate(qs);
+      });
+      */
+    qs = {
+        Status: status,
+        fid: fictionID,
+        Title: title,
+        PreAuthorNotes: pre,
+        Content: testText,
+        PostAuthorNotes: post,
+        ScheduledRelease: formattedDate,
+        timezone: timezone,
+        PollQuestion: "",
+        PollMultiple: 1,
+        action: "draft"
+    };
+    //Poll option parameters. Is this necessary? 
+    qs["PollOptions[0].options"] = "";
+    qs["PollOptions[0].votes"] = 0;
+    qs["PollOptions[1].options"] = "";
+    qs["PollOptions[1].votes"] = 0;
+    investigate(qs);
     RRL.load(address, qs, "POST").then(function () {
         console.log("draft scheduled");
     });
@@ -335,18 +363,21 @@ tests.compose = function () {
 tests.mainHTML = function () {
     console.log(`Called tests.mainHTML()`);
     return `
-    <form>
-    <input type=hidden name=FictionNr value="4293"/>
-    <input type=hidden name=order value="bookmark"/>
-    <input type=submit value="bookmark Iron Teeth"/>
+    <form id=${this.formName} onSubmit="JavaScript:sendForm(event, '${this.formName}')"> 
+      <input type=hidden name=FictionNr value="4293"/>
+      <input type=hidden name=order value="bookmark"/>
+      <input type=submit value="bookmark Iron Teeth"/>
     </form>
-    <button onclick="window.form.updateAll();">reload page</button>
-    <button onclick="console.log(window.form); investigate(form)">investigate form</button>
-    <button onclick="console.log('Forms: '+window.form.forms);">check form keys</button>
-    <button onclick="window.form['test_buttons'].bookmark()">bookmark test</button>
-    <button onclick="window.form=require('./form_instances.js');">reset form</button>
-    <button onclick="var test_variable='test'">make a test var</button>
-    <button onclick="console.log(test_variable);">log test var</button>
+    <div>
+      <button onclick="window.form['RRL_LocalChapters'].testSubmit();">Submit test draft</button>
+      <button onclick="window.form.updateAll();">reload page</button>
+      <button onclick="console.log(window.form); investigate(form)">investigate form</button>
+      <button onclick="console.log('Forms: '+window.form.forms);">check form keys</button>
+      <button onclick="window.form['test_buttons'].bookmark()">bookmark test</button>
+      <button onclick="window.form=require('./form_instances.js');">reset form</button>
+      <button onclick="var test_variable='test'">make a test var</button>
+      <button onclick="console.log(test_variable);">log test var</button>
+    </div>
     `;
 };
 //Bookmarks fiction, defaults to "Goblin Teeth"
@@ -361,6 +392,8 @@ tests.bookmark = function (args = {}) {
         };
         RRL.load(address, qs).then(function () {
             console.log("Successfully bookmarked.");
+        }).catch(function (err) {
+            console.log(err.message);
         });
     });
 };
