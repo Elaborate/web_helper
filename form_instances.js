@@ -183,7 +183,7 @@ localChapters.action = function (chapterPath = "", status = "New") {
     let chapter;
     for (const c in this.parameters.chapters) {
         const chap = this.parameters.chapters[c];
-        investigate(chap);
+        //investigate(chap);
         if (chap["filepath"] == chapterPath) {
             chapter = chap;
             break;
@@ -196,8 +196,8 @@ localChapters.action = function (chapterPath = "", status = "New") {
         console.log("could not find chapter with filepath: '" + chapterPath + "'");
         investigate(this.parameters.chapters);
     }
-    console.log("chapter found: ");
-    investigate(chapter);
+    //console.log("chapter found: ");
+    //investigate(chapter);
     //const chapter=this.parameters.chapters[ChapterName]; //FIX
     //Preparing submission parameters
     const fictionID = chapter.fictionID;

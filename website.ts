@@ -151,26 +151,31 @@ export class website {
       this.session = this.session || await this.login_request(); 
 
       //Set up basic options
-      const options = {
+      let options={};
+
+      if (method=="GET"){
+      options = {
         method: method,
         uri: address,
         qs: qs,
         headers: { cookie: this.session.cookie }
         };
-      console.log("loading site: "+address);
+      }
       
       //Special treatment for POST data
-      if (method=="POST"){
+      else if (method=="POST"){
         const token = this.session.rvt
-        const options = {
+        qs["__RequestVerificationToken:"] = token;
+        options = {
           method: method,
           uri: address,
           form: qs,
           headers: { cookie: this.session.cookie }
           };
-        options.form["__RequestVerificationToken:"] = token;  
       }
+
       //send a request to provided address. 
+      console.log("loading site: "+address);
       return request(options).catch(function(err){
         console.log("Error in load request! Request options: ");
         console.log(options);
