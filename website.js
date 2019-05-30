@@ -126,7 +126,7 @@ class website {
     //-----------------------------------------------------------------
     //--------------------- LOAD PAGE ---------------------------------
     //-----------------------------------------------------------------
-    static load(address, qs = {}) {
+    static load(address, qs = {}, method = "GET") {
         return __awaiter(this, void 0, void 0, function* () {
             console.log("Loading page: " + address + ", qs:");
             investigate(qs);
@@ -134,12 +134,26 @@ class website {
             this.session = this.session || (yield this.login_request());
             //Set up basic options
             const options = {
-                method: "GET",
+                method: method,
                 uri: address,
                 qs: qs,
                 headers: { cookie: this.session.cookie }
             };
             console.log("loading site: " + address);
+            //Special treatment for POST data
+            if (method == "POST") {
+                const token = this.session.rvt;
+                const options = {
+                    method: method,
+                    uri: address,
+                    form: qs,
+                    headers: { cookie: this.session.cookie }
+                };
+                options.form["__RequestVerificationToken:"] = token;
+                console.log("sending POST request, options: ");
+                investigate(options);
+                console.log("\n");
+            }
             //send a request to provided address. 
             try {
                 return request(options);

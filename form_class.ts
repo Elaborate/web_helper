@@ -282,6 +282,8 @@ export class form {
       //investigate(args)
       }
     }
+
+    static log(txt){console.log(txt)}
 }
 
 //--------------------------------------------------------------------------------------------

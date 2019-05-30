@@ -143,8 +143,9 @@ function changeValue(el, name, val=0){
 //When a form is submitted, this function is activated 
 //and sends the form data to the proper destination. 
 function sendForm(event, formName) {
-    event.preventDefault() // stop the form from submitting
-    //alert("form sent: "+formName)
+    event.preventDefault(); // stop the form from submitting
+    main_form.log("test");
+    //alert("form sent: "+formName);
     try{
         const target = document.getElementById(formName);
         if (target) console.log(`Found form with id='${formName}', innerHTML:${target.innerHTML}`);

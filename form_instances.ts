@@ -4,6 +4,7 @@ const {remote} = require('electron');
 const {BrowserWindow} = require('electron');
 const {ipcRenderer} = require('electron');
 const {ipcMain} = require('electron') || electron.remote.ipcMain;
+const dateformat = require('dateformat');
 
 const RRL = require("./website");
 const renderer = require("./renderer");
@@ -109,7 +110,7 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
       const fictionID = chapter.fictionID || undefined; 
       const pattern = fictions[fictionID.pattern];
       const path = chapter.filepath || 'unknown';
-      const name = chapter.filename;
+      const name = chapter.title || chapter.filename;
       ret+=`<li>${name}<button id='${path}' onclick="changeValue(this, 'chapterPath', '${path}'); changeOrder(this,'release');">schedule</button></li>` });
     return `<ul>\n${ret}\n</ul>
     <input type=hidden name=order value="release"/>
@@ -146,6 +147,7 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
         ret[chapter]["fictionID"] = novelID;
         ret[chapter]["filename"] = chapter;
         ret[chapter]["filepath"] = dirName+"/"+chapter;
+        ret[chapter]["title"] = chapter.replace(/\..../,"");
       }
       //investigate(ret);
     });
@@ -188,42 +190,46 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
     const fiction=form["RRL_UpdateSettings"].parameters.fictions[fictionID];
     const pre = chapter.pre || fiction.pre || "";
     const post = chapter.post || fiction.post || "";
-    const date = chapter.date;
+    const date = chapter.date || (new Date(Date.now()+7*24*60*60*1000));
+    const formattedDate = dateformat(date, 'yyyy-mm-dd hh:MM');
     const timezone = "-120" //FIX 
-    const token = RRL.token; 
     const address = "https://deployment.royalroad.com/fiction/chapter/new/"+fictionID;
+    const title = chapter.title || chapter.filename || "title"; 
+    const testText="abcd ".repeat(101); //Just using a simple test text for now
     const fs=require('fs');      
-    console.log("yo");
+    let qs={};
 
     //Reading in chapter text
     fs.readFile(chapterPath, 'utf8', function (err, chapterText) {
-    if (err) return console.log(err);    
-    if (!chapterText) {alert("Could not find file: "+chapterPath); return;}
-    if (chapterText.length<500) {alert("Must be at least 500 characters: "+chapterPath); return;}
+      if (err) return console.log(err);    
+      if (!chapterText) {alert("Could not find file: "+chapterPath); return;}
+      if (chapterText.length<500) {alert("Must be at least 500 characters: "+chapterPath); return;}
+      
+      qs={
+        Status: status, 
+        fid: fictionID,
+        Title: title, 
+        PreAuthorNotes: pre,
+        Content: testText,//chapterText,
+        PostAuthorNotes: post, 
+        ScheduledRelease: formattedDate,
+        timezone: timezone,
+        PollQuestion: "",
+        PollMultiple: 1, 
+        action: "draft"
+        }
+        //Poll option parameters. Is this necessary? 
+        qs["PollOptions[0].options"] = ""
+        qs["PollOptions[0].votes"] = 0;
+        qs["PollOptions[1].options"] = ""
+        qs["PollOptions[1].votes"] = 0;
+      investigate(qs);
+      });
     
-    const qs={
-      Status: status, 
-      fid: fictionID,
-      Title: chapter.fiction, 
-      PreAuthorNotes: pre,
-      Content: chapterText,
-      PostAuthorNotes: post, 
-      ScheduledRelease: date,
-      hasPoll: false, 
-      timezone: timezone,
-      __RequestVerificationToken: token,
-      action: "publish"
-      }
-    investigate(qs);
-    });
-    
-    console.log("ho");
-    
-    /*
-    RRL.load(address,qs).then(function(){
+    RRL.load(address,qs,"POST").then(function(){
       console.log("draft scheduled")
       
-    });*/
+      });
   }
 
   //--------------------------------------------------------------
@@ -329,22 +335,25 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
   tests.mainHTML=function(): string {
     console.log(`Called tests.mainHTML()`);
     return `
-    <form>
-    <input type=hidden name=FictionNr value="4293"/>
-    <input type=hidden name=order value="bookmark"/>
-    <input type=submit value="bookmark Iron Teeth"/>
+    <form id=${this.formName} onSubmit="JavaScript:sendForm(event, '${this.formName}')"> 
+      <input type=hidden name=FictionNr value="4293"/>
+      <input type=hidden name=order value="bookmark"/>
+      <input type=submit value="bookmark Iron Teeth"/>
     </form>
-    <button onclick="window.form.updateAll();">reload page</button>
-    <button onclick="console.log(form); investigate(form)">investigate form</button>
-    <button onclick="console.log('Forms: '+form.forms);">check form keys</button>
-    <button onclick="window.form['test_buttons'].bookmark()">bookmark test</button>
-    <button onclick="window.form=require('./form_instances.js');">reset form</button>
-    <button onclick="var test_variable='test'">make a test var</button>
-    <button onclick="console.log(test_variable);">log test var</button>
+    <div>
+      <button onclick="window.form.updateAll();">reload page</button>
+      <button onclick="console.log(window.form); investigate(form)">investigate form</button>
+      <button onclick="console.log('Forms: '+window.form.forms);">check form keys</button>
+      <button onclick="window.form['test_buttons'].bookmark()">bookmark test</button>
+      <button onclick="window.form=require('./form_instances.js');">reset form</button>
+      <button onclick="var test_variable='test'">make a test var</button>
+      <button onclick="console.log(test_variable);">log test var</button>
+    </div>
     `}
 
   //Bookmarks fiction, defaults to "Goblin Teeth"
-  tests.bookmark = async function(args){
+  tests.bookmark = async function(args={}){
+    
     const fictionNr=args["FictionNr"] || "4293";
     console.log("bookmarking via request");
     const address=RRL.baseURL+"/fictions/setbookmark/"+fictionNr;
@@ -355,7 +364,11 @@ export function investigate(obj, space=0, path=obj, parent=null, grandparent=nul
     RRL.load(address, qs).then(function(){
         console.log("Successfully bookmarked.");  
         });
+        
     }
+
+
+
 
 
 

@@ -144,7 +144,7 @@ export class website {
     //--------------------- LOAD PAGE ---------------------------------
     //-----------------------------------------------------------------
 
-    static async load(address, qs={}): Promise<string>{
+    static async load(address, qs={}, method="GET"): Promise<string>{
         console.log("Loading page: "+address+", qs:"); 
         investigate(qs);
       //Make sure that client is logged-in to RRL 
@@ -152,13 +152,27 @@ export class website {
 
       //Set up basic options
       const options = {
-        method: "GET",
+        method: method,
         uri: address,
         qs: qs,
         headers: { cookie: this.session.cookie }
         };
       console.log("loading site: "+address);
-
+      
+      //Special treatment for POST data
+      if (method=="POST"){
+        const token = this.session.rvt
+        const options = {
+          method: method,
+          uri: address,
+          form: qs,
+          headers: { cookie: this.session.cookie }
+          };
+        options.form["__RequestVerificationToken:"] = token; 
+        console.log("sending POST request, options: ");
+        investigate(options);
+        console.log("\n");
+      }
       //send a request to provided address. 
       try { return request(options); } 
       catch (err) { console.log("Error in load request: "+err.message); }
