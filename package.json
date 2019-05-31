@@ -4,22 +4,21 @@
   "description": "Application to upload chapters to RRL for you",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "build": "tsc",
+    "watch": "tsc -w",
+    "lint": "tslint -c tslint.json -p tsconfig.json",
+    "start": "npm run build && electron ./dist/main.js"
   },
   "author": "Roland Hansson",
   "license": "ISC",
-  "dependencies": {
+  "devDependencies": {
+    "@types/node": "^12.0.4",
     "cheerio": "^1.0.0-rc.2",
     "dateformat": "^3.0.3",
-    "electron": "^4.0.8",
-    "jquery": "^3.4.0",
-    "keytar": "^4.4.1",
-    "react": "^16.8.4",
-    "request": "^2.88.0",
-    "request-promise": "^4.2.4"
-  },
-  "devDependencies": {
-    "electron-rebuild": "^1.8.4"
+    "electron": "^5.0.2",
+    "request-promise": "^4.2.4",
+    "tslint": "^5.17.0",
+    "typescript": "^3.5.1"
   },
   "repository": {
     "type": "git",
