@@ -1,4 +1,8 @@
-node_modules/*
+node_modules
+dist
+
+.env
+
 accounts.json
 RRL_account.json
 RRL.json
@@ -6,3 +10,4 @@ RRL.json
 !package.json
 !package-lock.json
 !tsconfig.json
+!tslint.json
