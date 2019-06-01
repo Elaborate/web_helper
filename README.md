@@ -18,6 +18,6 @@ You can see an example of its use [here](https://medium.com/@shivekkhurana/intro
 
 I have set up a few actions that can be called already in the `api/` directory.
 
-Anything set up in there and added to the `api/index.ts` file properly should automatically be exposed for use to the renderer process.
+Anything set up in there and added to the `api/index.ts` file properly should automatically be exposed for use in the renderer process.
 
 You can see examples of how the renderer can use the actions in the `SandboxView` and the `LoginView` components.
