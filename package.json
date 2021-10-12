@@ -11,7 +11,7 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
     "dateformat": "^3.0.3",
-    "electron": "^4.0.8",
+    "electron": "^11.5.0",
     "jquery": "^3.4.0",
     "keytar": "^4.4.1",
     "react": "^16.8.4",
